@@ -2,16 +2,14 @@ var openai_config = require('./openai.json');
 var logger = require('winston');
 var XMLHttpRequest = require('xhr2');
 
-// Configure logger settings
-logger.remove(logger.transports.Console);
-logger.add(new logger.transports.Console, {
-    colorize: true
-});
-
-logger.level = 'debug';
-
-logger.info(openai_config.url);
-logger.info(openai_config["url"]);
+// configure logger settings if this is run directly
+if (require.main === module) {
+    logger.remove(logger.transports.Console);
+    logger.add(new logger.transports.Console, {
+        colorize: true
+    });
+    logger.level = 'debug';
+}
 
 // Make a request to the OpenAI API
 function openaiRequest(model, type, data, callback) {

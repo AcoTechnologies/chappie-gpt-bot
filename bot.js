@@ -2,6 +2,7 @@ const { Client, GatewayIntentBits } = require('discord.js');
 var logger = require('winston');
 var auth = require('./auth.json');
 var openai = require('./openai-request.js');
+const { REST, Routes } = require('discord.js');
 
 // Configure logger settings
 logger.remove(logger.transports.Console);
@@ -28,84 +29,121 @@ const prompt =
 \n\nUser(Tybbi): Are you consious?\
 \nChader: I belive i am.";
 
-// Initialize Discord Bot
-var bot = new Discord.Client({
-    token: auth.token,
-    autorun: true
-});
+// configure commands available to users
+const commands = [
+    {
+        name: 'ping',
+        description: 'Replies with Pong!',
+    },
+    {
+        name: 'enable',
+        description: 'Enables the chatbot',
+    },
+    {
+        name: 'disable',
+        description: 'Disables the chatbot',
+    },
+];
 
-bot.on('ready', function (evt) {
-    logger.info('Connected');
-    logger.info('Logged in as: ');
-    logger.info(bot.username + ' - (' + bot.id + ')');
-});
+// whitelisted users
+const white_usernames = [
+    'BraKi',
+    'Yens',
+];
 
-bot.on('message', function (user, userID, channelID, message, event) {
-    // print input messag, user and channel
-    logger.info("User: " + user + " UserID: " + userID + " ChannelID: " + channelID + " Message: " + message);
-    if (message === "Chader, are you there?") {
-        if (ai_enabled) {
-            bot.sendMessage({
-                to: channelID,
-                message: "Yes, i am here."
-            });
-        }
-        else {
-            bot.sendMessage({
-                to: channelID,
-                message: "I am not allowed to respond."
-            });
-        }
-        return
+var ai_enabled = false;
+
+const rest = new REST({ version: '10' }).setToken(auth.token);
+
+(async () => {
+    try {
+        console.log('Started refreshing application (/) commands.');
+
+        await rest.put(Routes.applicationCommands(auth.cliend_id), { body: commands });
+
+        console.log('Successfully reloaded application (/) commands.');
+    } catch (error) {
+        console.error(error);
     }
-    if (message === "Chader, come back") {
+})();
+
+const client = new Client({ intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+] });
+
+client.on('ready', () => {
+    console.log(`Logged in as ${client.user.tag}!`);
+});
+
+client.on('interactionCreate', async interaction => {
+    logger.debug(interaction);
+    if (!interaction.isChatInputCommand() && !ai_enabled) {
+        logger.info("Not a chat input command");
+        return;
+    }
+
+    if (interaction.commandName === 'ping') {
+        logger.info("Pong!");
+        await interaction.reply('Pong!');
+        return;
+    }
+    if (interaction.commandName === 'enable') {
+        logger.info("Enabling AI");
         ai_enabled = true;
-        bot.sendMessage({
-            to: channelID,
-            message: "I am back."
-        });
-        return
+        await interaction.reply('Chatbot enabled');
+        return;
     }
-    if (message === "Chader, fuck off") {
+    if (interaction.commandName === 'disable') {
+        logger.info("Disabling AI");
         ai_enabled = false;
-        bot.sendMessage({
-            to: channelID,
-            message: "I am going away."
-        });
-        return
-    }
-    if (ai_enabled) {
-        console.log("user: " + user);
-        var user_message = "\n\nUser(" + user + "): " + message
-        var add_prompt = prompt + user_message + "\nChader: ";
-        console.log("add_prompt: " + add_prompt);
-        if (userID != bot.id) {
-            openai.openaiRequest("davinci", "completion", { "prompt": add_prompt }, function (response) {
-                // parse the response text as JSON with try catch
-                try {
-                    var json = JSON.parse(response);
-                    // log the completion cost
-                    console.log("cost: " + json.usage.total_tokens);
-                    console.log("prompt: " + json.usage.prompt_tokens + "\n" + "completion: " + json.usage.completion_tokens);
-                    // print the reason for stopping
-                    console.log("finnish reason: " + JSON.stringify(json.choices[0]));
-                    // bot sends message back to channel if its not from the bot
-                    // set the bot response to all but the last line
-                    var bot_response = json.choices[0].text;
-                    console.log(bot_response);
-                    bot.sendMessage({
-                        to: channelID,
-                        message: bot_response
-                    });
-                }
-                catch (e) {
-                    console.log('Error parsing JSON!');
-                }
-            });
-        }
-    }
-    else {
-        console.log("AI is disabled");
-        console.log(user + " | " + message);
+        await interaction.reply('Chatbot disabled');
+        return;
     }
 });
+
+// create a on message event
+client.on('messageCreate', message => {
+    if (!ai_enabled) {
+        return;
+    }
+    // Message content
+    const content = message.content
+
+    // Message author
+    const author = message.author.username
+
+    // log content, user
+    logger.info("Message: " + content);
+    logger.info("Author: " + author);
+
+
+    // Check if the message is from a whitelisted user
+    if (white_usernames.includes(author)) {
+        // Respond with ai response
+        var user_message = "\n\nUser(" + author + "): " + content
+        var add_prompt = prompt + user_message + "\nChader: ";
+        openai.openaiRequest("davinci", "completion", { "prompt": add_prompt }, function (response) {
+            // parse the response text as JSON with try catch
+            try {
+                var json = JSON.parse(response);
+                // log the completion cost
+                console.log("cost: " + json.usage.total_tokens);
+                console.log("prompt: " + json.usage.prompt_tokens + "\n" + "completion: " + json.usage.completion_tokens);
+                // print the reason for stopping
+                console.log("finnish reason: " + JSON.stringify(json.choices[0]));
+                // bot sends message back to channel if its not from the bot
+                // set the bot response to all but the last line
+                var bot_response = json.choices[0].text;
+                // send the bot response
+                message.channel.send(bot_response);
+            } catch (e) {
+                console.log(e);
+            }
+        });
+    }
+
+});
+
+client.login(auth.token);
