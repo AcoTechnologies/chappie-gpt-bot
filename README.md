@@ -9,6 +9,11 @@ The reply is then sent to the same channel as the message.
 
 ## Installation, Usage
 
-To run this bot you need two json files containing configuration for your openai account and your discord bot secrets.
+To run this bot you need two json files 
+
+containing configuration for
+
+- openai account
+- discord bot secrets
 
 you also need node.js installed
