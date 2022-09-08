@@ -3,6 +3,8 @@
 - /ping
 - /enable
 - /disable
+- /model
+- /setmodel
 
 It sends plain message content embedded into a completion prompt to openai GPT3 davinci completion model.
 The reply is then sent to the same channel as the message.
