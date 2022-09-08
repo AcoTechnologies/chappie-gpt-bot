@@ -1,6 +1,7 @@
 {
     "api_key": "Super secret key in you openai trial(lets be real, you dont pay for stuff) account",
     "url": "https://api.openai.com/v1/",
+    "model": "davinci"
     "models": {
         "davinci":"text-davinci-002",
         "curie":"text-curie-001",
