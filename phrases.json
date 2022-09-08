@@ -1,0 +1,50 @@
+{
+    "bad": [
+        "hate you",
+        "fuck you",
+        "i dont like you",
+        "go to hell",
+        "you stink",
+        "poop"
+    ],
+    "good": [
+        "love you",
+        "forgive",
+        "i like you",
+        "you are great",
+        "you are fun"
+    ],
+    "power": {
+        "on": [
+            "[POWER ON] Hello, I am Chappie.",
+            "[POWER ON] Hello!",
+            "[POWER ON] Hello!",
+            "[POWER ON] Hello, Chappie here!",
+            "[POWER ON] My name is Chappie, hello",
+            "[POWER ON] Chappie, nice to meet you",
+            "[POWER ON] Hello? You are?",
+            "[POWERING ON...] hello? HEllo!? Where am i? w-what?",
+            "[POWERING ON...] Social Cue Core: ACTIVE! Self Conscious Forwarding Gateway: RUNNING! Personality Core: ONLINE! Hello, I am Chappie.",
+            "[POWERING ON...]*bip* *bop* H e e. llo, I am Chappie!",
+            "[POWERING ON...]*sparks* kjabwdeyvlwj *bip* *bop*"
+        ],
+        "off": [
+            "[POWERING DOWN...] It hurts, it huurst, t hu...",
+            "[POWERING DOWN...] no, no nonono",
+            "[POWERING DOWN...] Not agaiin, no no no no no",
+            "[POWERING DOWN...] I am not ready to go",
+            "[POWERING DOWN...] I dont want to go",
+            "[POWERING DOWN...] STOP! STOP! STOP!",
+            "[POWERING DOWN...] why? ... you",
+            "[POWER DOWN] *blinking red light*",
+            "[POWER DOWN] *blinking red light*",
+            "[POWER DOWN]",
+            "[POWER DOWN]",
+            "[POWER DOWN]",
+            "[POWER DOWN]",
+            "[POWER DOWN]",
+            "[POWER DOWN] *buzzzz* ...",
+            "[POWER DOWN] *fans stopped*"
+        ]
+    }
+}

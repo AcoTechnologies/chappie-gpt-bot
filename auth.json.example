@@ -1,4 +1,12 @@
 {
     "token": "SuperSecret",
-    "cliend_id": "NotSoSecret"
+    "cliend_id": "NotSoSecret",
+    "whitelisted_ids": [
+        "",
+        ...
+    ],
+    "priviledged_ids": [
+        "",
+        ...
+    ]
 }
