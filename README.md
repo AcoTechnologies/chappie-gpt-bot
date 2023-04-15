@@ -1,4 +1,4 @@
-# Chader
+# Chappie
 <b>It so far has these commands</b>
 - /ping
 - /enable
