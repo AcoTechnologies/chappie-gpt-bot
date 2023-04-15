@@ -68,22 +68,6 @@ class ChatSession {
 
 var sessions = [];
 
-// configure commands available to users
-const commands = [
-    new SlashCommandBuilder().setName('ping').setDescription('Replies with Pong!'),
-    new SlashCommandBuilder().setName('enable').setDescription('Enable Chader'),
-    new SlashCommandBuilder().setName('disable').setDescription('Disable Chader'),
-    new SlashCommandBuilder().setName('model').setDescription('Get Chader\'s model'),
-    new SlashCommandBuilder()
-        .setName('setmodel')
-        .setDescription('Set Chader\'s model')
-        .addStringOption(option =>
-            option.setName('model')
-                .setDescription('The model to use')
-                .setRequired(true)),
-].map(command => command.toJSON());
-
-
 // whitelisted users
 const whitelisted_ids = auth.whitelisted_ids;
 
@@ -91,43 +75,6 @@ const priviledged_user_ids = auth.priviledged_ids;
 
 var ai_enabled = false;
 
-const rest = new REST({ version: '10' }).setToken(auth.token);
-
-(async () => {
-    try {
-        /* Delete commands in the list
-        var command_ids = [
-            "1016857151177768974",
-            "1016451489083969588",
-            "1016857151177768973",
-            "1016451489083969587",
-            "1016857151177768975",
-            "1016841966958428261",
-            "1016857151177768972",
-            "1016448217187102850",
-            "1016857151664291912",
-            "1016841966958428262",
-
-        ];
-        // delete all existing commands
-        for (var i = 0; i < commands.length; i++) {
-            await rest.delete(Routes.applicationGuildCommand(auth.client_id, auth.guild_id, command_ids[i]))
-                .then(() => console.log('Successfully deleted guild command'))
-                .catch(console.error);
-            command_ids[i] = commands[i].id;
-        }
-        */
-        console.log('Started refreshing application (/) commands.');
-
-        await rest.put(Routes.applicationGuildCommands(auth.client_id, auth.guild_id), { body: commands })
-            .then((data) => console.log("You installed " + data.length + " commands."))
-            .catch((err) => console.log(err));
-        console.log('Successfully reloaded application (/) commands.');
-
-    } catch (error) {
-        console.error(error);
-    }
-})();
 
 const client = new Client({
     intents: [
