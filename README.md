@@ -1,4 +1,8 @@
 # Chappie
+
+Chappie GPT Discord bot is a fun discord bot member with personality.
+It uses OpenAI API and Discord service worker to simulate a fun member of your discord channel.
+
 <b>It so far has these commands</b>
 - /ping
 - /enable
