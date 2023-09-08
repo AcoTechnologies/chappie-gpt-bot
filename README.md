@@ -23,3 +23,13 @@ containing configuration for
 - discord bot secrets
 
 you also need node.js installed
+
+Commands to run:
+
+```bash
+yarn install
+```
+
+```bash
+yarn run
+```

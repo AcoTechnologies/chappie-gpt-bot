@@ -205,6 +205,10 @@ client.on('messageCreate', message => {
                     return;
                 }
                 var bot_response = json.choices[0].text;
+                // if the text contains the stop criterias from openai.json then remove that from the response and all text after the stop criteria
+                if (bot_response.includes(openai_config.stop)) {
+                    bot_response = bot_response.substring(0, bot_response.indexOf(openai_config.stop));
+                }
                 // send the bot response
                 message.channel.send(bot_response);
             } catch (e) {
@@ -214,5 +218,7 @@ client.on('messageCreate', message => {
     }
 
 });
+
+console.log("Starting bot...");
 
 client.login(auth.token);

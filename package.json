@@ -1,30 +1,15 @@
 {
-
     "name": "chader",
-
     "version": "1.0.0",
-
     "description": "My First Discord Bot",
-
     "main": "bot.js",
-
     "author": "BraKistad",
-
     "dependencies": {
-
         "discord.io": "https://github.com/woor/discord.io/tarball/gateway_v6",
-
         "discord.js": "^14.3.0",
-
         "request": "^2.88.2",
-
         "stockfish": "^15.0.0",
-
         "winston": "^3.8.1",
-
         "xhr2": "^0.2.1"
-
     }
-
 }
-
