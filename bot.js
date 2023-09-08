@@ -1,6 +1,6 @@
 var logger = require('winston');
 var auth = require('./auth.json');
-var moods = require('./bot-moods.json');
+var presets = require('./bot-presets.json');
 var phrases = require('./phrases.json');
 var openai = require('./openai-request.js');
 var openai_config = require('./openai.json');
@@ -24,7 +24,7 @@ class ChatEntry {
 
 class ChatHistory {
     constructor() {
-        this.promt_start = moods.default;
+        this.promt_start = presets.initial;
         this.current_mood = "default";
         this.history = [];
     }
@@ -39,21 +39,21 @@ class ChatHistory {
     getPrompt() {
         var prompt = this.promt_start;
         this.history.forEach(entry => {
-            prompt += "\n\nUser(" + entry.author + "): " + entry.content;
+            prompt += "\n\nAuthor(" + entry.author + "): " + "\nBEGIN\n" + entry.content + "\nEND";
             // if last entry
             if (this.history[this.history.length - 1] == entry) {
-                prompt += "\nUser(Chappie):";
+                prompt += "\nAuthor(Chappie): " + "\nBEGIN\n";
             }
         });
         return prompt;
     }
-    changeMood(mood) {
+    changePreset(mood) {
         try {
-            this.promt_start = moods[mood];
+            this.promt_start = presets[mood];
             this.current_mood = mood;
         }
         catch (err) {
-            this.promt_start = moods.default;
+            this.promt_start = presets.default;
             this.current_mood = "default";
         }
     }
@@ -189,25 +189,6 @@ client.on('messageCreate', message => {
     if (whitelisted_ids.includes(author_id) && author_id != auth.client_id) {
         // Respond with ai response
         message.channel.sendTyping();
-        if (content.toLowerCase().includes("what mood are you")) {
-            message.channel.send("I am " + session.history.current_mood + " right now.");
-            return;
-        }
-        // if content lower case is in bad phrases change mood to bad
-        if (["chappie", "default"].includes(session.history.current_mood)) {
-            for (var i = 0; i < phrases.bad.length; i++) {
-                if (content.toLowerCase().includes(phrases.bad[i])) {
-                    session.history.changeMood(["angry", "sad"][Math.floor(Math.random() * 2)]);
-                }
-            }
-        }
-        else if (["sad", "angry"].includes(session.history.current_mood)) {
-            for (var i = 0; i < phrases.good.length; i++) {
-                if (content.toLowerCase().includes(phrases.good[i])) {
-                    session.history.changeMood(["chappie", "default"][Math.floor(Math.random() * 2)]);
-                }
-            }
-        }
         var prompt = session.history.getPrompt();
         openai.openaiRequest(openai_config.model, "completion", { "prompt": prompt }, function (response) {
             // parse the response text as JSON with try catch

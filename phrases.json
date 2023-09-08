@@ -1,19 +1,4 @@
 {
-    "bad": [
-        "hate you",
-        "fuck you",
-        "i dont like you",
-        "go to hell",
-        "you stink",
-        "poop"
-    ],
-    "good": [
-        "love you",
-        "forgive",
-        "i like you",
-        "you are great",
-        "you are fun"
-    ],
     "power": {
         "on": [
             "[POWER ON] Beep boop, I am online!",
