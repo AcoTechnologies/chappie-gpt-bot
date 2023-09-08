@@ -27,9 +27,9 @@ you also need node.js installed
 Commands to run:
 
 ```bash
-yarn install
+npm install
 ```
 
 ```bash
-yarn run
+node bot.js
 ```
