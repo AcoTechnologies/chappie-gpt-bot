@@ -213,8 +213,37 @@ client.on('messageCreate', message => {
                     return;
                 }
                 var bot_response = json.choices[0].message.content;
-                // send the bot response
-                message.channel.send(bot_response);
+                // send the bot response, within a try catch
+                try {
+                    // if the bot response is longer than 2000 characters, throw an error with code 50035
+                    if (bot_response.length > 2000) {
+                        throw { code: 50035, message: "Message too long" };
+                    }
+                    message.channel.send(bot_response);
+                }
+                catch (e) {
+                    // if it is a discord api error, log it
+                    // if it the error code is 50035, it is a message too long error
+                    // so send the first 1500 characters of the response, and send the rest in another message, split by newlines
+                    if (e.code == 50035) {
+                        logger.info("Message too long, splitting into multiple messages");
+                        message_lines = bot_response.split("\n");
+                        characters_in_message = 0;
+                        reduces_response = "";
+                        message_lines.forEach(line => {
+                            if (characters_in_message > 1500) {
+                                message.channel.send(reduces_response);
+                                reduces_response = "";
+                                characters_in_message = 0;
+                            }
+                            reduces_response += line + "\n";
+                            characters_in_message += line.length;
+                        });
+                        message.channel.send(reduces_response);
+                    } else {
+                        logger.error(e);
+                    }
+                }
             } catch (e) {
                 console.log(e);
             }
