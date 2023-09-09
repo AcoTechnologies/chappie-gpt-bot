@@ -2,7 +2,7 @@
     "name": "chader",
     "version": "1.0.0",
     "description": "My First Discord Bot",
-    "main": "bot.js",
+    "main": "bot/bot.js",
     "author": "BraKistad",
     "dependencies": {
         "discord.io": "https://github.com/woor/discord.io/tarball/gateway_v6",
@@ -11,5 +11,10 @@
         "stockfish": "^15.0.0",
         "winston": "^3.8.1",
         "xhr2": "^0.2.1"
+    },
+    "repository": "git@github.com:WebRodent/chappie-gpt-bot.git",
+    "license": "MIT",
+    "scripts": {
+        "start": "node bot/bot.js"
     }
 }

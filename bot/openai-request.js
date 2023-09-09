@@ -12,35 +12,28 @@ if (require.main === module) {
 }
 
 // Make a request to the OpenAI API
-function openaiRequest(model, type, data, callback) {
+function openaiRequest(model, bot_context, callback) {
     var model_name = "None";
-    var types = Object.keys(openai_config.endpoints);
-    if (!types.includes(type)) {
-        throw "Invalid type: " + type;
-    }
     var avail_models = openai_config.models;
     if (!avail_models[model]) {
         throw "Invalid model: " + model;
     }
     else {
+        var data = {};
         model_name = avail_models[model];
-        var endpoint = openai_config.endpoints[type];
-        var url = openai_config.url + endpoint;
         data.model = model_name;
-        data.temperature = openai_config.temperature;
-        data.top_p = openai_config.top_p;
-        data.frequency_penalty = openai_config.frequency_penalty;
-        data.presence_penalty = openai_config.presence_penalty;
-        logger.info("url: " + url);
-        logger.info("types: " + types);
+        data.messages = bot_context;
+        logger.info("url: " + openai_config.url);
+
         const Http_completion = new XMLHttpRequest();
-        Http_completion.open("POST", url);
+        Http_completion.open("POST", openai_config.url);
         Http_completion.setRequestHeader("Content-Type", "application/json");
         Http_completion.setRequestHeader("Authorization", "Bearer " + openai_config.api_key);
         Http_completion.send(JSON.stringify(data));
         Http_completion.onreadystatechange = (e) => {
             callback(Http_completion.responseText);
         }
+        return Http_completion;
     }
 }
 

@@ -15,6 +15,8 @@ logger.add(new logger.transports.Console, {
 
 logger.level = 'debug';
 
+bot_name = "Chappie";
+
 class ChatEntry {
     constructor(author, content) {
         this.author = author;
@@ -24,8 +26,8 @@ class ChatEntry {
 
 class ChatHistory {
     constructor() {
-        this.promt_start = presets.initial;
-        this.current_mood = "default";
+        this.bot_context = presets.default;
+        this.current_preset = "default";
         this.history = [];
     }
 
@@ -36,25 +38,31 @@ class ChatHistory {
         this.history.push(new ChatEntry(author, content));
     }
 
-    getPrompt() {
-        var prompt = this.promt_start;
+    getLatestLog() {
+        var bot_context = this.bot_context;
         this.history.forEach(entry => {
-            prompt += "\n\nAuthor(" + entry.author + "): " + "\nBEGIN\n" + entry.content + "\nEND";
-            // if last entry
-            if (this.history[this.history.length - 1] == entry) {
-                prompt += "\nAuthor(Chappie): " + "\nBEGIN\n";
+            if (entry.author == bot_name) {
+                bot_context.push({
+                    "role": "assistant",
+                    "content": entry.content
+                });
+            } else {
+                bot_context.push({
+                    "role": "user",
+                    "content": entry.author + ": " + entry.content
+                });
             }
         });
-        return prompt;
+        return bot_context;
     }
-    changePreset(mood) {
+    changePreset(newPreset) {
         try {
-            this.promt_start = presets[mood];
-            this.current_mood = mood;
+            this.bot_context = presets[newPreset];
+            this.current_preset = newPreset;
         }
         catch (err) {
             this.promt_start = presets.default;
-            this.current_mood = "default";
+            this.current_preset = "default";
         }
     }
 }
@@ -189,8 +197,8 @@ client.on('messageCreate', message => {
     if (whitelisted_ids.includes(author_id) && author_id != auth.client_id) {
         // Respond with ai response
         message.channel.sendTyping();
-        var prompt = session.history.getPrompt();
-        openai.openaiRequest(openai_config.model, "completion", { "prompt": prompt }, function (response) {
+        var bot_context = session.history.getLatestLog();
+        openai.openaiRequest(openai_config.model, bot_context, function (response) {
             // parse the response text as JSON with try catch
             try {
                 logger.info("Response: " + response);
@@ -204,11 +212,7 @@ client.on('messageCreate', message => {
                     logger.error("Error: " + json['message']);
                     return;
                 }
-                var bot_response = json.choices[0].text;
-                // if the text contains the stop criterias from openai.json then remove that from the response and all text after the stop criteria
-                if (bot_response.includes(openai_config.stop)) {
-                    bot_response = bot_response.substring(0, bot_response.indexOf(openai_config.stop));
-                }
+                var bot_response = json.choices[0].message.content;
                 // send the bot response
                 message.channel.send(bot_response);
             } catch (e) {
