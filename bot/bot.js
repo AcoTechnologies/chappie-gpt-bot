@@ -52,7 +52,7 @@ class ChatHistory {
                     "content": entry.author + ": " + entry.content
                 });
             }
-        });
+        }); //FIXME: when history builds up, this will get too long, resulting in to many tokens used in the request
         return bot_context;
     }
     changePreset(newPreset) {
