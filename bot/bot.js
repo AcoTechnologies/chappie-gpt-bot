@@ -32,7 +32,7 @@ class ChatHistory {
     }
 
     addEntry(author, content) {
-        if (this.history.length > 6) {
+        if (this.history.length > 10) {
             this.history.shift();
         }
         this.history.push(new ChatEntry(author, content));
@@ -40,7 +40,12 @@ class ChatHistory {
 
     getLatestLog() {
         var bot_context = this.bot_context;
-        this.history.forEach(entry => {
+        var bot_context_token_count = 0;
+        this.history.reverse().forEach(entry => {
+            bot_context_token_count += entry.content.split(" ").length;
+            if (bot_context_token_count > 2800) { // max token count is 4096, and it should be less than that
+                return bot_context;
+            }
             if (entry.author == bot_name) {
                 bot_context.push({
                     "role": "assistant",
@@ -52,7 +57,7 @@ class ChatHistory {
                     "content": entry.author + ": " + entry.content
                 });
             }
-        }); //FIXME: when history builds up, this will get too long, resulting in to many tokens used in the request
+        });
         return bot_context;
     }
     changePreset(newPreset) {
@@ -70,6 +75,7 @@ class ChatHistory {
 class ChatSession {
     constructor(channelId) {
         this.channelId = channelId;
+        this.active = false;
         this.history = new ChatHistory();
     }
 }
@@ -123,12 +129,36 @@ client.on('interactionCreate', async interaction => {
         if (interaction.commandName === 'enable') {
             logger.info("Enabling AI");
             ai_enabled = true;
+            // search for session
+            var session = sessions.find(session => session.channelId == interaction.channelId);
+            // if session does not exist, create it
+            if (session == undefined) {
+                session = new ChatSession(interaction.channelId);
+                session.active = true;
+                sessions.push(session);
+            }
+            // if session exists, set it to active
+            else {
+                session.active = true;
+            }
             await interaction.reply(phrases.power.on[Math.floor(Math.random() * phrases.power.on.length) | 0]);
             return;
         }
         else if (interaction.commandName === 'disable') {
             logger.info("Disabling AI");
             ai_enabled = false;
+            // search for session
+            var session = sessions.find(session => session.channelId == interaction.channelId);
+            // if session does not exist, create it
+            if (session == undefined) {
+                session = new ChatSession(interaction.channelId);
+                session.active = false;
+                sessions.push(session);
+            }
+            // if session exists, set active to false
+            else {
+                session.active = false;
+            }
             await interaction.reply(phrases.power.off[Math.floor(Math.random() * phrases.power.off.length) | 0]);
             return;
         }
