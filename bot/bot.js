@@ -205,6 +205,11 @@ client.on('messageCreate', message => {
         sessions.push(session);
     }
 
+    // if session is not active, return
+    if (!session.active) {
+        return;
+    }
+
     // Message content
     const content = message.content
 
