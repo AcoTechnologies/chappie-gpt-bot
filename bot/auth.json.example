@@ -1,12 +1,7 @@
 {
-    "token": "SuperSecret",
-    "cliend_id": "NotSoSecret",
-    "whitelisted_ids": [
-        "",
-        ...
-    ],
-    "priviledged_ids": [
-        "",
-        ...
-    ]
+    "token": "",
+    "client_id": "",
+    "whitelisted_ids": [],
+    "priviledged_ids": [],
+    "guild_id": ""
 }

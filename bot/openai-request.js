@@ -31,7 +31,10 @@ function openaiRequest(model, bot_context, callback) {
         Http_completion.setRequestHeader("Authorization", "Bearer " + openai_config.api_key);
         Http_completion.send(JSON.stringify(data));
         Http_completion.onreadystatechange = (e) => {
-            callback(Http_completion.responseText);
+            if (Http_completion.readyState == 4) {
+                const response = Http_completion.responseText;
+                callback(response, Http_completion);
+            }
         }
         return Http_completion;
     }
