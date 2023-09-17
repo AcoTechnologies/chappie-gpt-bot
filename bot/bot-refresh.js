@@ -23,11 +23,11 @@ const commands = [
                 .setDescription('The mode to use\nAvailable modes: default, sys_admin, juridisk_megler')
                 .setRequired(true)),
     new SlashCommandBuilder()
-        .setName('ask')
-        .setDescription('Ask Chappie a question')
+        .setName('tell')
+        .setDescription('Tell Chappie')
         .addStringOption(option =>
-            option.setName('question')
-                .setDescription('The question to ask')
+            option.setName('message')
+                .setDescription('tell Chappie something')
                 .setRequired(true)), // Define the /ask command with a required question option
 ].map(command => command.toJSON());
 

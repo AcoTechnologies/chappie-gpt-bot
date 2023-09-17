@@ -210,19 +210,113 @@ client.on('interactionCreate', async interaction => {
 
         }
 
-        //command to ask a question
-        else if (interaction.commandName === 'ask') {
-            // Get the question from the interaction
-            const question = interaction.options.getString('question');
+        //command to tell chappie something
+        else if (interaction.commandName === 'tell') {//FIXME: this does not work because our message to Chappie isn't visible to us, and won't be stored in the history
+            // Get the message from the interaction
+            const message = interaction.options.getString('message');
     
-            // Your logic to generate an answer for the question goes here
-            // You can use the 'question' variable to process the user's question
-            // Generate an answer and send it as a reply to the interaction
-    
-            // Example response (replace this with your actual logic):
-            const answer = 'Chappie is answering your question: ' + question;
-    
-            await interaction.reply(answer);
+            if (!ai_enabled) {
+                logger.info("AI is not enabled");
+                return;
+            } else {
+                logger.debug("AI is enabled");
+            }
+            
+            // if session does not exist, create it
+            var session = sessions.find(session => session.channelId == interaction.channelId);
+            if (session == undefined) {
+                logger.info("Session does not exist: " + session.channelId);
+                session = new ChatSession(message.channelId);
+                sessions.push(session);
+            } else {
+                logger.debug("Session exists: " + session.channelId);
+            }
+        
+            // if session is not active, return
+            if (!session.active) {
+                logger.info("Session is not active: " + session.channelId);
+                return;
+            } else {
+                logger.debug("Session is active: " + session.channelId);
+            }
+        
+            // Message content
+            const content = message
+        
+            // Message author
+            const author = interaction.user.username
+        
+            // Message author id
+            const author_id = interaction.user.id
+        
+            // Add message to history if it is not from the bot
+        
+            session.history.addEntry(author, content);
+        
+            // log content, user
+            logger.info("Message: " + content);
+            logger.info("Author: " + author);
+        
+        
+            // Check if the message is from a whitelisted user
+            if (whitelisted_ids.includes(author_id) && author_id != auth.client_id) {
+                // Respond with ai response
+                interaction.deferReply();
+                var bot_context = session.history.getLatestLog();
+                openai.openaiRequest(openai_config.model, bot_context, function (response, Http_completion) {
+                    if (Http_completion.status != 200) {
+                        logger.error("Error: " + Http_completion.status);
+                        return;
+                    }
+                    try {
+                        logger.info("Response: " + response);
+                        var json = JSON.parse(response);
+                        // if the response contains key message with value that contains 'overloaded'
+                        if (json['message'] && json['message'].includes(
+                            'That model is currently overloaded with other requests.')) {
+                            // stops sending typing indicator
+                            interaction.editReply("Chappie is currently overloaded with other requests. Please try again later.");
+                            // log the error
+                            logger.error("Error: " + json['message']);
+                            return;
+                        }
+                        var bot_response = json.choices[0].message.content;
+                        // send the bot response, within a try catch
+                        try {
+                            // if the bot response is longer than 2000 characters, throw an error with code 50035
+                            if (bot_response.length > 2000) {
+                                throw { code: 50035, message: "Message too long" };
+                            }
+                            interaction.editReply(bot_response);
+                        }
+                        catch (e) {
+                            // if it is a discord api error, log it
+                            // if it the error code is 50035, it is a message too long error
+                            // so send the first 1500 characters of the response, and send the rest in another message, split by newlines
+                            if (e.code == 50035) {
+                                logger.info("Message too long, splitting into multiple messages");
+                                message_lines = bot_response.split("\n");
+                                characters_in_message = 0;
+                                reduces_response = "";
+                                message_lines.forEach(line => {
+                                    if (characters_in_message > 1500) {
+                                        interaction.editReply(reduces_response);
+                                        reduces_response = "";
+                                        characters_in_message = 0;
+                                    }
+                                    reduces_response += line + "\n";
+                                    characters_in_message += line.length;
+                                });
+                                interaction.editReply(reduces_response);
+                            } else {
+                                logger.error(e);
+                            }
+                        }
+                    } catch (e) {
+                        console.log(e);
+                    }
+                });
+            }
             return;
         }
 
@@ -241,103 +335,11 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
-// create a on message event
-client.on('messageCreate', message => {
-    if (!ai_enabled) {
-        return;
-    }
+// // create a on message event
+// client.on('messageCreate', message => {
+    
 
-    // if session does not exist, create it
-    var session = sessions.find(session => session.channelId == message.channelId);
-    if (session == undefined) {
-        session = new ChatSession(message.channelId);
-        sessions.push(session);
-    }
-
-    // if session is not active, return
-    if (!session.active) {
-        return;
-    }
-
-    // Message content
-    const content = message.content
-
-    // Message author
-    const author = message.author.username
-
-    // Message author id
-    const author_id = message.author.id
-
-    // Add message to history if it is not from the bot
-
-    session.history.addEntry(author, content);
-
-    // log content, user
-    logger.info("Message: " + content);
-    logger.info("Author: " + author);
-
-
-    // Check if the message is from a whitelisted user
-    if (whitelisted_ids.includes(author_id) && author_id != auth.client_id) {
-        // Respond with ai response
-        message.channel.sendTyping();
-        var bot_context = session.history.getLatestLog();
-        openai.openaiRequest(openai_config.model, bot_context, function (response, Http_completion) {
-            if (Http_completion.status != 200) {
-                logger.error("Error: " + Http_completion.status);
-                return;
-            }
-            try {
-                logger.info("Response: " + response);
-                var json = JSON.parse(response);
-                // if the response contains key message with value that contains 'overloaded'
-                if (json['message'] && json['message'].includes(
-                    'That model is currently overloaded with other requests.')) {
-                    // stops sending typing indicator
-                    message.channel.send();
-                    // log the error
-                    logger.error("Error: " + json['message']);
-                    return;
-                }
-                var bot_response = json.choices[0].message.content;
-                // send the bot response, within a try catch
-                try {
-                    // if the bot response is longer than 2000 characters, throw an error with code 50035
-                    if (bot_response.length > 2000) {
-                        throw { code: 50035, message: "Message too long" };
-                    }
-                    message.channel.send(bot_response);
-                }
-                catch (e) {
-                    // if it is a discord api error, log it
-                    // if it the error code is 50035, it is a message too long error
-                    // so send the first 1500 characters of the response, and send the rest in another message, split by newlines
-                    if (e.code == 50035) {
-                        logger.info("Message too long, splitting into multiple messages");
-                        message_lines = bot_response.split("\n");
-                        characters_in_message = 0;
-                        reduces_response = "";
-                        message_lines.forEach(line => {
-                            if (characters_in_message > 1500) {
-                                message.channel.send(reduces_response);
-                                reduces_response = "";
-                                characters_in_message = 0;
-                            }
-                            reduces_response += line + "\n";
-                            characters_in_message += line.length;
-                        });
-                        message.channel.send(reduces_response);
-                    } else {
-                        logger.error(e);
-                    }
-                }
-            } catch (e) {
-                console.log(e);
-            }
-        });
-    }
-
-});
+// });
 
 console.log("Starting bot...");
 
