@@ -12,15 +12,15 @@ logger.add(new logger.transports.Console, {
 // configure commands available to users
 const commands = [
     new SlashCommandBuilder().setName('ping').setDescription('Replies with Pong!'),
-    new SlashCommandBuilder().setName('enable').setDescription('Enable Chader'),
-    new SlashCommandBuilder().setName('disable').setDescription('Disable Chader'),
-    new SlashCommandBuilder().setName('model').setDescription('Get Chader\'s model'),
+    new SlashCommandBuilder().setName('enable').setDescription('Enable Chappie'),
+    new SlashCommandBuilder().setName('disable').setDescription('Disable Chappie'),
+    new SlashCommandBuilder().setName('model').setDescription('Get Chappie\'s model'),
     new SlashCommandBuilder()
-        .setName('setmodel')
-        .setDescription('Set Chader\'s model')
+        .setName('setmode')
+        .setDescription('Set Chappie\'s mode')
         .addStringOption(option =>
-            option.setName('model')
-                .setDescription('The model to use')
+            option.setName('mode')
+                .setDescription('The mode to use\nAvailable modes: default, sys_admin, juridisk_megler')
                 .setRequired(true)),
 ].map(command => command.toJSON());
 

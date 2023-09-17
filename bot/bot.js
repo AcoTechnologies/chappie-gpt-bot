@@ -26,38 +26,69 @@ class ChatEntry {
 
 class ChatHistory {
     constructor() {
-        this.bot_context = presets.default;
+        this.bot_preset = presets.default;
         this.current_preset = "default";
         this.history = [];
     }
 
     addEntry(author, content) {
-        if (this.history.length > 6) {
+        if (this.history.length > 10) {
             this.history.shift();
         }
         this.history.push(new ChatEntry(author, content));
     }
 
     getLatestLog() {
-        var bot_context = this.bot_context;
-        this.history.forEach(entry => {
+        var bot_context = [];
+        var bot_context_token_count = 0;
+        // create a flipped copy of the history
+        var history_flipped = this.history.slice().reverse();
+        history_flipped.forEach(entry => {
+            bot_context_token_count += entry.content.split(" ").length;
+            if (bot_context_token_count > 2400) { // max token count is 4096, and it should be less than that
+                this.bot_preset.forEach(prefixEntry => {
+                    bot_context.unshift({
+                        "role": prefixEntry.role,
+                        "content": prefixEntry.content
+                    });
+                });
+                return bot_context;
+            }
             if (entry.author == bot_name) {
-                bot_context.push({
+                bot_context.unshift({
                     "role": "assistant",
                     "content": entry.content
                 });
             } else {
+                // put the entry at the start of the array
+                bot_context.unshift({
+                    "role": "user",
+                    "content": entry.author + ": " + entry.content
+                });
+                /*
                 bot_context.push({
                     "role": "user",
                     "content": entry.author + ": " + entry.content
                 });
+                */
             }
-        }); //FIXME: when history builds up, this will get too long, resulting in to many tokens used in the request
+        });
+        this.bot_preset.forEach(prefixEntry => {
+            bot_context.unshift({
+                "role": prefixEntry.role,
+                "content": prefixEntry.content
+            });
+        });
         return bot_context;
     }
     changePreset(newPreset) {
         try {
-            this.bot_context = presets[newPreset];
+            this.bot_preset = presets[newPreset];
+            if (this.bot_preset == undefined) {
+
+                this.bot_preset = presets.default;
+                this.current_preset = "default";
+            }
             this.current_preset = newPreset;
         }
         catch (err) {
@@ -70,6 +101,7 @@ class ChatHistory {
 class ChatSession {
     constructor(channelId) {
         this.channelId = channelId;
+        this.active = false;
         this.history = new ChatHistory();
     }
 }
@@ -123,29 +155,59 @@ client.on('interactionCreate', async interaction => {
         if (interaction.commandName === 'enable') {
             logger.info("Enabling AI");
             ai_enabled = true;
+            // search for session
+            var session = sessions.find(session => session.channelId == interaction.channelId);
+            // if session does not exist, create it
+            if (session == undefined) {
+                session = new ChatSession(interaction.channelId);
+                session.active = true;
+                sessions.push(session);
+            }
+            // if session exists, set it to active
+            else {
+                session.active = true;
+            }
             await interaction.reply(phrases.power.on[Math.floor(Math.random() * phrases.power.on.length) | 0]);
             return;
         }
         else if (interaction.commandName === 'disable') {
             logger.info("Disabling AI");
             ai_enabled = false;
+            // search for session
+            var session = sessions.find(session => session.channelId == interaction.channelId);
+            // if session does not exist, create it
+            if (session == undefined) {
+                session = new ChatSession(interaction.channelId);
+                session.active = false;
+                sessions.push(session);
+            }
+            // if session exists, set active to false
+            else {
+                session.active = false;
+            }
             await interaction.reply(phrases.power.off[Math.floor(Math.random() * phrases.power.off.length) | 0]);
             return;
         }
 
-        // command to change model
-        else if (interaction.commandName === 'setmodel') {
-            logger.info("Set model command");
-            var new_model = interaction.options.getString('model');
-            logger.info("New model: " + new_model);
-            // model is in openai_config.models.keys()
-            if (new_model in Object.keys(openai_config.models)) {
-                openai_config.model = new_model;
-                await interaction.reply('Model set to: ' + new_model);
-            } else {
-                await interaction.reply('Model not found');
+        // command to change mode
+        else if (interaction.commandName === 'setmode') {
+            // this will set the AI's preset
+            logger.info("Setting mode");
+            // get the preset from the interaction
+            var preset = interaction.options.getString('mode');
+            // search for session
+            var session = sessions.find(session => session.channelId == interaction.channelId);
+            // if session does not exist, create it
+            if (session == undefined) {
+                session = new ChatSession(interaction.channelId);
+                sessions.push(session);
             }
+            // change the preset
+            session.history.changePreset(preset);
+            // reply with the preset
+            await interaction.reply("Set mode to " + session.history.current_preset);
             return;
+
         }
     }
     else {
@@ -175,6 +237,11 @@ client.on('messageCreate', message => {
         sessions.push(session);
     }
 
+    // if session is not active, return
+    if (!session.active) {
+        return;
+    }
+
     // Message content
     const content = message.content
 
@@ -198,8 +265,11 @@ client.on('messageCreate', message => {
         // Respond with ai response
         message.channel.sendTyping();
         var bot_context = session.history.getLatestLog();
-        openai.openaiRequest(openai_config.model, bot_context, function (response) {
-            // parse the response text as JSON with try catch
+        openai.openaiRequest(openai_config.model, bot_context, function (response, Http_completion) {
+            if (Http_completion.status != 200) {
+                logger.error("Error: " + Http_completion.status);
+                return;
+            }
             try {
                 logger.info("Response: " + response);
                 var json = JSON.parse(response);
