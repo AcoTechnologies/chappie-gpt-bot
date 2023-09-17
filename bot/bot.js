@@ -209,6 +209,23 @@ client.on('interactionCreate', async interaction => {
             return;
 
         }
+
+        //command to ask a question
+        else if (interaction.commandName === 'ask') {
+            // Get the question from the interaction
+            const question = interaction.options.getString('question');
+    
+            // Your logic to generate an answer for the question goes here
+            // You can use the 'question' variable to process the user's question
+            // Generate an answer and send it as a reply to the interaction
+    
+            // Example response (replace this with your actual logic):
+            const answer = 'Chappie is answering your question: ' + question;
+    
+            await interaction.reply(answer);
+            return;
+        }
+
     }
     else {
         if (!priviledged) {

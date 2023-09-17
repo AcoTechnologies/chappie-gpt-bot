@@ -22,6 +22,13 @@ const commands = [
             option.setName('mode')
                 .setDescription('The mode to use\nAvailable modes: default, sys_admin, juridisk_megler')
                 .setRequired(true)),
+    new SlashCommandBuilder()
+        .setName('ask')
+        .setDescription('Ask Chappie a question')
+        .addStringOption(option =>
+            option.setName('question')
+                .setDescription('The question to ask')
+                .setRequired(true)), // Define the /ask command with a required question option
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(auth.token);
