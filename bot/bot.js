@@ -252,7 +252,7 @@ client.on('messageCreate', message => {
     }
     
     // if session does not exist, create it
-    var session = sessions.find(session => session.channelId == interaction.channelId);
+    var session = sessions.find(session => session.channelId == message.channelId);
     if (session == undefined) {
         logger.info("Session does not exist: " + session.channelId);
         session = new ChatSession(message.channelId);
@@ -270,13 +270,13 @@ client.on('messageCreate', message => {
     }
 
     // Message content
-    const content = message
+    const content = message.content
 
     // Message author
-    const author = interaction.user.username
+    const author = message.author.username
 
     // Message author id
-    const author_id = interaction.user.id
+    const author_id = message.author.id
 
     // Add message to history if it is not from the bot
 
@@ -290,7 +290,7 @@ client.on('messageCreate', message => {
     // Check if the message is from a whitelisted user
     if (whitelisted_ids.includes(author_id) && author_id != auth.client_id) {
         // Respond with ai response
-        interaction.deferReply();
+        message.channel.sendTyping();
         var bot_context = session.history.getLatestLog();
         openai.openaiRequest(openai_config.model, bot_context, function (response, Http_completion) {
             if (Http_completion.status != 200) {
@@ -304,7 +304,7 @@ client.on('messageCreate', message => {
                 if (json['message'] && json['message'].includes(
                     'That model is currently overloaded with other requests.')) {
                     // stops sending typing indicator
-                    interaction.editReply("Chappie is currently overloaded with other requests. Please try again later.");
+                    message.reply("Chappie is currently overloaded with other requests. Please try again later.");
                     // log the error
                     logger.error("Error: " + json['message']);
                     return;
@@ -316,7 +316,7 @@ client.on('messageCreate', message => {
                     if (bot_response.length > 2000) {
                         throw { code: 50035, message: "Message too long" };
                     }
-                    interaction.editReply(bot_response);
+                    message.reply(bot_response);
                 }
                 catch (e) {
                     // if it is a discord api error, log it
@@ -329,14 +329,14 @@ client.on('messageCreate', message => {
                         reduces_response = "";
                         message_lines.forEach(line => {
                             if (characters_in_message > 1500) {
-                                interaction.editReply(reduces_response);
+                                message.reply(reduces_response);
                                 reduces_response = "";
                                 characters_in_message = 0;
                             }
                             reduces_response += line + "\n";
                             characters_in_message += line.length;
                         });
-                        interaction.editReply(reduces_response);
+                        message.reply(reduces_response);
                     } else {
                         logger.error(e);
                     }
