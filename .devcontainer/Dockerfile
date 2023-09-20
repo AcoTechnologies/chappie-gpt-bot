@@ -1,8 +1,9 @@
-FROM mcr.microsoft.com/devcontainers/javascript-node:1-20-bullseye
+FROM mcr.microsoft.com/devcontainers/base:debian
 
 # [Optional] Uncomment this section to install additional OS packages.
-# RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-#     && apt-get -y install --no-install-recommends <your-package-list-here>
+#install curl
+RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
+    && apt-get -y install --no-install-recommends curl 
 
 # [Optional] Uncomment if you want to install an additional version of node using nvm
 # ARG EXTRA_NODE_VERSION=10
@@ -10,3 +11,7 @@ FROM mcr.microsoft.com/devcontainers/javascript-node:1-20-bullseye
 
 # [Optional] Uncomment if you want to install more global node modules
 # RUN su node -c "npm install -g <your-package-list-here>"
+
+ENV BUN_INSTALL=/usr/local
+
+RUN curl -fsSL https://bun.sh/install | bash
