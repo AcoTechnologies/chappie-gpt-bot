@@ -235,22 +235,16 @@ client.on('interactionCreate', async interaction => {
 
 // create a on message event
 client.on('messageCreate', message => {
-    var isThereChappie = scanForKeyword(message.content, "chappie");
 
-    if (!isThereChappie) {
-        logger.info("false");
-        return;
-    } else {
-        logger.debug("true");
-    }
+    // Message content
+    const content = message.content
 
-    if (!ai_enabled) {
-        logger.info("AI is not enabled");
-        return;
-    } else {
-        logger.debug("AI is enabled");
-    }
-    
+    // Message author
+    const author = message.author.global_name
+
+    // Message author id
+    const author_id = message.author.id
+
     // if session does not exist, create it
     var session = sessions.find(session => session.channelId == message.channelId);
     if (session == undefined) {
@@ -269,18 +263,24 @@ client.on('messageCreate', message => {
         logger.debug("Session is active: " + session.channelId);
     }
 
-    // Message content
-    const content = message.content
-
-    // Message author
-    const author = message.author.username
-
-    // Message author id
-    const author_id = message.author.id
-
-    // Add message to history if it is not from the bot
-
     session.history.addEntry(author, content);
+
+    var isThereChappie = scanForKeyword(message.content, "chappie");
+
+    if (!isThereChappie) {
+        logger.info("false");
+        return;
+    } else {
+        logger.debug("true");
+    }
+
+    if (!ai_enabled) {
+        logger.info("AI is not enabled");
+        return;
+    } else {
+        logger.debug("AI is enabled");
+    }
+
 
     // log content, user
     logger.info("Message: " + content);
