@@ -106,6 +106,14 @@ class ChatSession {
     }
 }
 
+function scanForKeyword(message, keyword) {
+    if (message.toLowerCase().includes(keyword)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 var sessions = [];
 
 // whitelisted users
@@ -209,6 +217,7 @@ client.on('interactionCreate', async interaction => {
             return;
 
         }
+
     }
     else {
         if (!priviledged) {
@@ -224,36 +233,58 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
+
+
 // create a on message event
 client.on('messageCreate', message => {
-    if (!ai_enabled) {
-        return;
-    }
-
-    // if session does not exist, create it
-    var session = sessions.find(session => session.channelId == message.channelId);
-    if (session == undefined) {
-        session = new ChatSession(message.channelId);
-        sessions.push(session);
-    }
-
-    // if session is not active, return
-    if (!session.active) {
-        return;
-    }
 
     // Message content
     const content = message.content
 
     // Message author
-    const author = message.author.username
-
+    var author = message.author.global_name
+    if (author == undefined) {
+        author = message.author.username
+    }
     // Message author id
     const author_id = message.author.id
 
-    // Add message to history if it is not from the bot
+    // if session does not exist, create it
+    var session = sessions.find(session => session.channelId == message.channelId);
+    if (session == undefined) {
+        logger.info("Session does not exist: " + session.channelId);
+        session = new ChatSession(message.channelId);
+        sessions.push(session);
+    } else {
+        logger.debug("Session exists: " + session.channelId);
+    }
+
+    // if session is not active, return
+    if (!session.active) {
+        logger.info("Session is not active: " + session.channelId);
+        return;
+    } else {
+        logger.debug("Session is active: " + session.channelId);
+    }
 
     session.history.addEntry(author, content);
+
+    var botMentioned = scanForKeyword(message.content, "chappie");
+
+    if (!botMentioned) {
+        logger.info("false");
+        return;
+    } else {
+        logger.debug("true");
+    }
+
+    if (!ai_enabled) {
+        logger.info("AI is not enabled");
+        return;
+    } else {
+        logger.debug("AI is enabled");
+    }
+
 
     // log content, user
     logger.info("Message: " + content);
@@ -277,7 +308,7 @@ client.on('messageCreate', message => {
                 if (json['message'] && json['message'].includes(
                     'That model is currently overloaded with other requests.')) {
                     // stops sending typing indicator
-                    message.channel.send();
+                    message.reply("Chappie is currently overloaded with other requests. Please try again later.");
                     // log the error
                     logger.error("Error: " + json['message']);
                     return;
@@ -289,7 +320,7 @@ client.on('messageCreate', message => {
                     if (bot_response.length > 2000) {
                         throw { code: 50035, message: "Message too long" };
                     }
-                    message.channel.send(bot_response);
+                    message.reply(bot_response);
                 }
                 catch (e) {
                     // if it is a discord api error, log it
@@ -302,14 +333,14 @@ client.on('messageCreate', message => {
                         reduces_response = "";
                         message_lines.forEach(line => {
                             if (characters_in_message > 1500) {
-                                message.channel.send(reduces_response);
+                                message.reply(reduces_response);
                                 reduces_response = "";
                                 characters_in_message = 0;
                             }
                             reduces_response += line + "\n";
                             characters_in_message += line.length;
                         });
-                        message.channel.send(reduces_response);
+                        message.reply(reduces_response);
                     } else {
                         logger.error(e);
                     }
