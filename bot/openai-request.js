@@ -13,7 +13,6 @@ if (require.main === module) {
 
 // Make a request to the OpenAI API
 function openaiRequest(model, bot_context, callback) {
-    logger.debug(bot_context);
     var model_name = "None";
     var avail_models = openai_config.models;
     if (!avail_models[model]) {

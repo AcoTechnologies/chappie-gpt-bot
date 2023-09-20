@@ -258,8 +258,10 @@ client.on('messageCreate', message => {
     const content = message.content
 
     // Message author
-    const author = message.author.global_name
-
+    var author = message.author.global_name
+    if (author == undefined) {
+        author = message.author.username
+    }
     // Message author id
     const author_id = message.author.id
 
