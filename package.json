@@ -1,20 +1,26 @@
 {
-    "name": "chader",
-    "version": "1.0.0",
-    "description": "My First Discord Bot",
-    "main": "bot/bot.js",
-    "author": "BraKistad",
-    "dependencies": {
-        "discord.io": "https://github.com/woor/discord.io/tarball/gateway_v6",
-        "discord.js": "^14.3.0",
-        "request": "^2.88.2",
-        "stockfish": "^15.0.0",
-        "winston": "^3.8.1",
-        "xhr2": "^0.2.1"
-    },
-    "repository": "git@github.com:WebRodent/chappie-gpt-bot.git",
-    "license": "MIT",
-    "scripts": {
-        "start": "node bot/bot.js"
-    }
+  "name": "chappie",
+  "version": "1.0.0",
+  "description": "WebRodent - Chappie - A Useful Chat Bot",
+  "main": "bot/bot.js",
+  "author": "BraKistad",
+  "dependencies": {
+    "discord.io": "^2.5.3",
+    "discord.js": "^14.3.0",
+    "request": "^2.88.2",
+    "stockfish": "^15.0.0",
+    "winston": "^3.8.1",
+    "xhr2": "^0.2.1"
+  },
+  "repository": "git@github.com:WebRodent/chappie-gpt-bot.git",
+  "license": "MIT",
+  "scripts": {
+    "start": "bun bot/bot.js"
+  },
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
 }
