@@ -22,14 +22,13 @@ containing configuration for
 - openai account
 - discord bot secrets
 
-you also need node.js installed
+you also need following
+- vscode
+- docker
+- vscode extension - Dev Container
 
-Commands to run:
+Command to run:
 
 ```bash
-npm install
-```
-
-```bash
-node bot.js
+bun start
 ```
