@@ -233,11 +233,13 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
+
+
 // create a on message event
 client.on('messageCreate', message => {
-    var isThereChappie = scanForKeyword(message.content, "chappie");
+    var botMentioned = scanForKeyword(message.content, "chappie");
 
-    if (!isThereChappie) {
+    if (!botMentioned) {
         logger.info("false");
         return;
     } else {
