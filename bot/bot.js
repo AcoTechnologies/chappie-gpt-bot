@@ -237,22 +237,6 @@ client.on('interactionCreate', async interaction => {
 
 // create a on message event
 client.on('messageCreate', message => {
-    var botMentioned = scanForKeyword(message.content, "chappie");
-
-    if (!botMentioned) {
-        logger.info("false");
-        return;
-    } else {
-        logger.debug("true");
-    }
-
-    if (!ai_enabled) {
-        logger.info("AI is not enabled");
-        return;
-    } else {
-        logger.debug("AI is enabled");
-    }
-    
 
     // Message content
     const content = message.content
@@ -285,9 +269,9 @@ client.on('messageCreate', message => {
 
     session.history.addEntry(author, content);
 
-    var isThereChappie = scanForKeyword(message.content, "chappie");
+    var botMentioned = scanForKeyword(message.content, "chappie");
 
-    if (!isThereChappie) {
+    if (!botMentioned) {
         logger.info("false");
         return;
     } else {
