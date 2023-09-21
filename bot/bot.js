@@ -42,13 +42,8 @@ class ChatHistory {
         history_flipped.forEach(entry => {
             bot_context_token_count += entry.content.split(" ").length;
             if (bot_context_token_count > 2400) { // max token count is 4096, and it should be less than that
-                this.bot_preset.forEach(prefixEntry => {
-                    bot_context.unshift({
-                        "role": prefixEntry.role,
-                        "content": prefixEntry.content
-                    });
-                });
-                return bot_context;
+                const complete_context = this.bot_preset.concat(bot_context);
+                return complete_context;
             }
             if (entry.author == bot_name) {
                 bot_context.unshift({
@@ -61,21 +56,12 @@ class ChatHistory {
                     "role": "user",
                     "content": entry.author + ": " + entry.content
                 });
-                /*
-                bot_context.push({
-                    "role": "user",
-                    "content": entry.author + ": " + entry.content
-                });
-                */
             }
         });
-        this.bot_preset.forEach(prefixEntry => {
-            bot_context.unshift({
-                "role": prefixEntry.role,
-                "content": prefixEntry.content
-            });
-        });
-        return bot_context;
+
+        // insert this.bot_preset at the start of the array, in the current order
+        const complete_context = this.bot_preset.concat(bot_context);
+        return complete_context;
     }
     changePreset(newPreset) {
         try {
@@ -113,8 +99,6 @@ function scanForKeyword(message, keyword) {
 var sessions = [];
 
 // whitelisted users
-const whitelisted_ids = config.auth.whitelisted_ids;
-
 const priviledged_user_ids = config.auth.priviledged_ids;
 
 var ai_enabled = false;
@@ -290,4 +274,5 @@ client.on('messageCreate', msg_event => {
 
 });
 
+// login to Discord with your app's token, this starts the bot
 client.login(config.auth.token);
