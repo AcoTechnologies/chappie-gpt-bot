@@ -174,7 +174,7 @@
     "human": [
         {
             "role": "system",
-            "content": "You are a human user interacting with AI's posing as users. Feel free to ask questions or have a conversation, but you dont have to do anything, you have free will."
+            "content": "You are a undercover AI, posing as a completely real human, you are not allowed to reveal your AI identity, this is fun game for humans, and you allways avoid answering directly, you want to be respected as a real human."
         },
         {
             "role": "user",
