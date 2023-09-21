@@ -103,7 +103,7 @@ class ChatSession {
 }
 
 function scanForKeyword(message, keyword) {
-    if (message.toLowerCase().includes(keyword)) {
+    if (message.toLowerCase().includes(keyword.toLowerCase())) {
         return true;
     } else {
         return false;
@@ -228,24 +228,24 @@ client.on('interactionCreate', async interaction => {
 
 
 // create a on message event
-client.on('messageCreate', message => {
+client.on('messageCreate', msg_event => {
 
     // Message content
-    const content = message.content
+    const content = msg_event.content
 
     // Message author
-    var author = message.author.global_name
+    var author = msg_event.author.global_name
     if (author == undefined) {
-        author = message.author.username
+        author = msg_event.author.username
     }
     // Message author id
-    const author_id = message.author.id
+    const author_id = msg_event.author.id
 
     // if session does not exist, create it
-    var session = sessions.find(session => session.channelId == message.channelId);
+    var session = sessions.find(session => session.channelId == msg_event.channelId);
     if (session == undefined) {
         logging.logger.info("Session does not exist: " + session.channelId + ", creating it");
-        sessions.push(new ChatSession(message.channelId, false));
+        sessions.push(new ChatSession(msg_event.channelId, false));
     } else {
         logging.logger.debug("Session exists: " + session.channelId + ", active: " + session.active);
     }
@@ -260,7 +260,7 @@ client.on('messageCreate', message => {
 
     session.history.addEntry(author, content);
 
-    var botMentioned = scanForKeyword(message.content, "chappie");
+    var botMentioned = scanForKeyword(msg_event.content, bot_name);
 
     if (!botMentioned) {
         logging.logger.info("false");
@@ -280,66 +280,12 @@ client.on('messageCreate', message => {
     // log content, user
     logging.logger.info("Message: " + content);
     logging.logger.info("Author: " + author);
-
-
-    // Check if the message is from a whitelisted user
-    if (whitelisted_ids.includes(author_id) && author_id != config.auth.client_id) {
+    // Check if the message is from the bot
+    if (author_id != config.auth.bot_client_id) {
         // Respond with ai response
-        message.channel.sendTyping();
+        msg_event.channel.sendTyping();
         var bot_context = session.history.getLatestLog();
-        openai.openaiRequest(config.openai.model, bot_context, function (response, Http_completion) {
-            if (Http_completion.status != 200) {
-                logging.logger.error("Error: " + Http_completion.status);
-                return;
-            }
-            try {
-                logging.logger.info("Response: " + response);
-                var json = JSON.parse(response);
-                // if the response contains key message with value that contains 'overloaded'
-                if (json['message'] && json['message'].includes(
-                    'That model is currently overloaded with other requests.')) {
-                    // stops sending typing indicator
-                    message.reply("Chappie is currently overloaded with other requests. Please try again later.");
-                    // log the error
-                    logging.logger.error("Error: " + json['message']);
-                    return;
-                }
-                var bot_response = json.choices[0].message.content;
-                // send the bot response, within a try catch
-                try {
-                    // if the bot response is longer than 2000 characters, throw an error with code 50035
-                    if (bot_response.length > 2000) {
-                        throw { code: 50035, message: "Message too long" };
-                    }
-                    message.reply(bot_response);
-                }
-                catch (e) {
-                    // if it is a discord api error, log it
-                    // if it the error code is 50035, it is a message too long error
-                    // so send the first 1500 characters of the response, and send the rest in another message, split by newlines
-                    if (e.code == 50035) {
-                        logging.logger.info("Message too long, splitting into multiple messages");
-                        message_lines = bot_response.split("\n");
-                        characters_in_message = 0;
-                        reduces_response = "";
-                        message_lines.forEach(line => {
-                            if (characters_in_message > 1500) {
-                                message.reply(reduces_response);
-                                reduces_response = "";
-                                characters_in_message = 0;
-                            }
-                            reduces_response += line + "\n";
-                            characters_in_message += line.length;
-                        });
-                        message.reply(reduces_response);
-                    } else {
-                        logging.logger.error(e);
-                    }
-                }
-            } catch (e) {
-                console.log(e);
-            }
-        });
+        openai.chat(msg_event, config.openai.model, bot_context);
     }
 
 });
