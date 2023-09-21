@@ -1,19 +1,15 @@
-var logger = require('winston');
-var auth = require('./auth.json');
-var presets = require('./bot-presets.json');
-var phrases = require('./phrases.json');
-var openai = require('./openai-request.js');
-var openai_config = require('./openai.json');
+var logging = require('./pkg/logger.js');
+var config = require('./config/config.json');
+var presets = require('./config/bot-presets.json');
+var phrases = require('./config/phrases.json');
+var openai = require('./pkg/openai-request.js');
 const { REST } = require('@discordjs/rest');
 const { Client, GatewayIntentBits, SlashCommandBuilder, Routes } = require('discord.js');
 
-// Configure logger settings
-logger.remove(logger.transports.Console);
-logger.add(new logger.transports.Console, {
-    colorize: true
-});
+// Configure logging.logger settings
+logging.logger.level = 'debug';
 
-logger.level = 'debug';
+logging.logger.info("Starting bot...");
 
 bot_name = "Chappie";
 
@@ -99,9 +95,9 @@ class ChatHistory {
 }
 
 class ChatSession {
-    constructor(channelId) {
+    constructor(channelId, active) {
         this.channelId = channelId;
-        this.active = false;
+        this.active = active;
         this.history = new ChatHistory();
     }
 }
@@ -117,9 +113,9 @@ function scanForKeyword(message, keyword) {
 var sessions = [];
 
 // whitelisted users
-const whitelisted_ids = auth.whitelisted_ids;
+const whitelisted_ids = config.auth.whitelisted_ids;
 
-const priviledged_user_ids = auth.priviledged_ids;
+const priviledged_user_ids = config.auth.priviledged_ids;
 
 var ai_enabled = false;
 
@@ -137,39 +133,37 @@ client.on('ready', () => {
 });
 
 client.on('interactionCreate', async interaction => {
-    logger.debug(interaction);
+    logging.logger.debug(interaction);
     // check if user is priviledged
     priviledged = false;
     if (priviledged_user_ids.includes(interaction.user.id)) {
         priviledged = true;
     }
-    logger.info("Priviledged: " + priviledged);
+    logging.logger.info("Priviledged: " + priviledged);
     if (!interaction.isChatInputCommand() && !ai_enabled) {
-        logger.info("Not a chat input command");
+        logging.logger.info("Not a chat input command");
         return;
     }
     // none-priviledged commands
     else if (interaction.commandName === 'ping') {
-        logger.info("Pong!");
+        logging.logger.info("Pong!");
         await interaction.reply('Pong!');
         return;
     }
     else if (interaction.commandName === 'model') {
-        logger.info("Model command");
-        await interaction.reply('Model: ' + openai_config.model);
+        logging.logger.info("Model command");
+        await interaction.reply('Model: ' + config.openai.model);
         return;
     }
     else if (priviledged) { // priviledged user commands
         if (interaction.commandName === 'enable') {
-            logger.info("Enabling AI");
+            logging.logger.info("Enabling AI");
             ai_enabled = true;
             // search for session
             var session = sessions.find(session => session.channelId == interaction.channelId);
             // if session does not exist, create it
             if (session == undefined) {
-                session = new ChatSession(interaction.channelId);
-                session.active = true;
-                sessions.push(session);
+                sessions.push(new ChatSession(interaction.channelId, true));
             }
             // if session exists, set it to active
             else {
@@ -179,15 +173,13 @@ client.on('interactionCreate', async interaction => {
             return;
         }
         else if (interaction.commandName === 'disable') {
-            logger.info("Disabling AI");
+            logging.logger.info("Disabling AI");
             ai_enabled = false;
             // search for session
             var session = sessions.find(session => session.channelId == interaction.channelId);
             // if session does not exist, create it
             if (session == undefined) {
-                session = new ChatSession(interaction.channelId);
-                session.active = false;
-                sessions.push(session);
+                sessions.push(new ChatSession(interaction.channelId, false));
             }
             // if session exists, set active to false
             else {
@@ -200,7 +192,7 @@ client.on('interactionCreate', async interaction => {
         // command to change mode
         else if (interaction.commandName === 'setmode') {
             // this will set the AI's preset
-            logger.info("Setting mode");
+            logging.logger.info("Setting mode");
             // get the preset from the interaction
             var preset = interaction.options.getString('mode');
             // search for session
@@ -221,12 +213,12 @@ client.on('interactionCreate', async interaction => {
     }
     else {
         if (!priviledged) {
-            logger.info("Not a priviledged user");
+            logging.logger.info("Not a priviledged user");
             await interaction.reply('BIOS error: Access denied!');
             return;
         }
         else {
-            logger.info("Not a valid command");
+            logging.logger.info("Not a valid command");
             await interaction.reply('ERROR: INPUT UNRECOGNIZED!');
             return;
         }
@@ -252,19 +244,18 @@ client.on('messageCreate', message => {
     // if session does not exist, create it
     var session = sessions.find(session => session.channelId == message.channelId);
     if (session == undefined) {
-        logger.info("Session does not exist: " + session.channelId);
-        session = new ChatSession(message.channelId);
-        sessions.push(session);
+        logging.logger.info("Session does not exist: " + session.channelId + ", creating it");
+        sessions.push(new ChatSession(message.channelId, false));
     } else {
-        logger.debug("Session exists: " + session.channelId);
+        logging.logger.debug("Session exists: " + session.channelId + ", active: " + session.active);
     }
 
     // if session is not active, return
     if (!session.active) {
-        logger.info("Session is not active: " + session.channelId);
+        logging.logger.info("Session is not active: " + session.channelId + ", returning");
         return;
     } else {
-        logger.debug("Session is active: " + session.channelId);
+        logging.logger.debug("Session is active: " + session.channelId + ", using it");
     }
 
     session.history.addEntry(author, content);
@@ -272,37 +263,37 @@ client.on('messageCreate', message => {
     var botMentioned = scanForKeyword(message.content, "chappie");
 
     if (!botMentioned) {
-        logger.info("false");
+        logging.logger.info("false");
         return;
     } else {
-        logger.debug("true");
+        logging.logger.debug("true");
     }
 
     if (!ai_enabled) {
-        logger.info("AI is not enabled");
+        logging.logger.info("AI is not enabled");
         return;
     } else {
-        logger.debug("AI is enabled");
+        logging.logger.debug("AI is enabled");
     }
 
 
     // log content, user
-    logger.info("Message: " + content);
-    logger.info("Author: " + author);
+    logging.logger.info("Message: " + content);
+    logging.logger.info("Author: " + author);
 
 
     // Check if the message is from a whitelisted user
-    if (whitelisted_ids.includes(author_id) && author_id != auth.client_id) {
+    if (whitelisted_ids.includes(author_id) && author_id != config.auth.client_id) {
         // Respond with ai response
         message.channel.sendTyping();
         var bot_context = session.history.getLatestLog();
-        openai.openaiRequest(openai_config.model, bot_context, function (response, Http_completion) {
+        openai.openaiRequest(config.openai.model, bot_context, function (response, Http_completion) {
             if (Http_completion.status != 200) {
-                logger.error("Error: " + Http_completion.status);
+                logging.logger.error("Error: " + Http_completion.status);
                 return;
             }
             try {
-                logger.info("Response: " + response);
+                logging.logger.info("Response: " + response);
                 var json = JSON.parse(response);
                 // if the response contains key message with value that contains 'overloaded'
                 if (json['message'] && json['message'].includes(
@@ -310,7 +301,7 @@ client.on('messageCreate', message => {
                     // stops sending typing indicator
                     message.reply("Chappie is currently overloaded with other requests. Please try again later.");
                     // log the error
-                    logger.error("Error: " + json['message']);
+                    logging.logger.error("Error: " + json['message']);
                     return;
                 }
                 var bot_response = json.choices[0].message.content;
@@ -327,7 +318,7 @@ client.on('messageCreate', message => {
                     // if it the error code is 50035, it is a message too long error
                     // so send the first 1500 characters of the response, and send the rest in another message, split by newlines
                     if (e.code == 50035) {
-                        logger.info("Message too long, splitting into multiple messages");
+                        logging.logger.info("Message too long, splitting into multiple messages");
                         message_lines = bot_response.split("\n");
                         characters_in_message = 0;
                         reduces_response = "";
@@ -342,7 +333,7 @@ client.on('messageCreate', message => {
                         });
                         message.reply(reduces_response);
                     } else {
-                        logger.error(e);
+                        logging.logger.error(e);
                     }
                 }
             } catch (e) {
@@ -353,6 +344,4 @@ client.on('messageCreate', message => {
 
 });
 
-console.log("Starting bot...");
-
-client.login(auth.token);
+client.login(config.auth.token);

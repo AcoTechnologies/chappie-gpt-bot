@@ -3,14 +3,14 @@
 # install dependencies
 bun install
 
-# check if bot/auth.json exists
-if [ ! -f "bot/auth.json" ]; then
+# check if bot/config/config.json exists
+if [ ! -f "bot/config/config.json" ]; then
     echo "auth.json not found, creating one..."
     cp bot/auth.json.example bot/auth.json
 fi
 
-# check if bot/openai.json exists
-if [ ! -f "bot/openai.json" ]; then
-    echo "openai.json not found, creating one..."
-    cp bot/openai.json.example bot/openai.json
+# check if .sql/init.json exists
+if [ ! -f ".sql/init.json" ]; then
+    echo "init.json not found, creating one..."
+    cp .sql/init.json.example .sql/init.json
 fi
