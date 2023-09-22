@@ -1,7 +1,7 @@
 // Database handler for bot's postgresql database
 
 const { Pool } = require('pg');
-const { logger } = require('./logger');
+const logging = require('./logger');
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -11,7 +11,7 @@ const pool = new Pool({
 });
 
 pool.on('error', (err, client) => {
-    logger.error('Unexpected error on idle client', err);
+    logging.logger.error('Unexpected error on idle client', err);
     process.exit(-1);
 }
 );

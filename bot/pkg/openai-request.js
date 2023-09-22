@@ -1,7 +1,7 @@
-var config = require('../config/config.json');
 var logging = require('./logger.js');
 var XMLHttpRequest = require('xhr2');
 
+const openai_url = "https://api.openai.com/" + process.env.OPENAI_VERSION + "/chat/completions";
 
 function requestHandler(msg_event, response, Http_completion) {
     if (Http_completion.status != 200) {
@@ -63,12 +63,12 @@ function chat(msg_event, model, bot_context) {
     var data = {};
     data.model = model;
     data.messages = bot_context;
-    logging.logger.info("url: " + config.openai.url);
+    logging.logger.info("url: " + openai_url);
 
     const Http_completion = new XMLHttpRequest();
-    Http_completion.open("POST", config.openai.url);
+    Http_completion.open("POST", openai_url);
     Http_completion.setRequestHeader("Content-Type", "application/json");
-    Http_completion.setRequestHeader("Authorization", "Bearer " + config.openai.api_key);
+    Http_completion.setRequestHeader("Authorization", "Bearer " + process.env.OPENAI_API_KEY);
     Http_completion.send(JSON.stringify(data));
     Http_completion.onreadystatechange = (e) => {
         if (Http_completion.readyState == 4) {
