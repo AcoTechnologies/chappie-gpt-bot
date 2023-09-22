@@ -1,12 +1,12 @@
 -- Create the user table for storing users that have activated the API
-CREATE TABLE IF NOT EXISTS "user" (
+CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create the guild table for storing guild activation data
-CREATE TABLE IF NOT EXISTS guild (
+CREATE TABLE IF NOT EXISTS guilds (
     id VARCHAR(255) PRIMARY KEY,
     bot_owner INT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS guild (
     FOREIGN KEY (bot_owner) REFERENCES "user" (id)
 );
 
--- Create the session table for storing discord session data
-CREATE TABLE IF NOT EXISTS session (
+-- Create the guild_sessions table for storing discord guild_sessions data
+CREATE TABLE IF NOT EXISTS guild_sessions (
     id SERIAL PRIMARY KEY,
     channel_id VARCHAR(255) NOT NULL,
     guild_id VARCHAR(255) NOT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS session (
 );
 
 -- Create the bot roles table for storing roles that the bot owner and administrators can assign
-CREATE TABLE IF NOT EXISTS bot_role (
+CREATE TABLE IF NOT EXISTS bot_roles (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS bot_role (
 );
 
 -- Create the permissions table for storing permissions that can be assigned to roles
-CREATE TABLE IF NOT EXISTS permission (
+CREATE TABLE IF NOT EXISTS permissions (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS permission (
 );
 
 -- Create the role permissions table for linking roles and permissions
-CREATE TABLE IF NOT EXISTS role_permission (
+CREATE TABLE IF NOT EXISTS role_permissions (
     role_id INT NOT NULL,
     permission_id INT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS role_permission (
 );
 
 -- Create the user roles table for linking users and roles
-CREATE TABLE IF NOT EXISTS user_role (
+CREATE TABLE IF NOT EXISTS user_roles (
     user_id INT NOT NULL,
     role_id INT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS user_role (
 );
 
 -- Create the bot presets table for storing bot presets
-CREATE TABLE IF NOT EXISTS bot_preset (
+CREATE TABLE IF NOT EXISTS bot_presets (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     data JSON NOT NULL,
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS bot_preset (
 );
 
 -- Create the guild presets table for linking guilds and presets
-CREATE TABLE IF NOT EXISTS guild_preset (
+CREATE TABLE IF NOT EXISTS guild_presets (
     preset_id INT NOT NULL,
     guild_id VARCHAR(255) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -83,8 +83,16 @@ CREATE TABLE IF NOT EXISTS guild_preset (
     FOREIGN KEY (guild_id) REFERENCES guild (id)
 );
 
+-- Create the scopes table for storing API scopes
+CREATE TABLE IF NOT EXISTS scopes (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create the guild API activations table for storing API activations in a guild
-CREATE TABLE IF NOT EXISTS guild_api_activation (
+CREATE TABLE IF NOT EXISTS guild_api_activations (
     id SERIAL PRIMARY KEY,
     guild_id VARCHAR(255) NOT NULL,
     api_key VARCHAR(255) NOT NULL,
@@ -95,10 +103,3 @@ CREATE TABLE IF NOT EXISTS guild_api_activation (
     FOREIGN KEY (guild_id) REFERENCES guild (id)
 );
 
--- Create the scopes table for storing API scopes
-CREATE TABLE IF NOT EXISTS scope (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);

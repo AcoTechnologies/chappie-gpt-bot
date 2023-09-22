@@ -228,7 +228,7 @@ client.on('messageCreate', msg_event => {
     // if session does not exist, create it
     var session = sessions.find(session => session.channelId == msg_event.channelId);
     if (session == undefined) {
-        logging.logger.info("Session does not exist: " + session.channelId + ", creating it");
+        logging.logger.info("Session does not exist: " + msg_event.channelId + ", creating it");
         sessions.push(new ChatSession(msg_event.channelId, false));
     } else {
         logging.logger.debug("Session exists: " + session.channelId + ", active: " + session.active);
