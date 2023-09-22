@@ -60,31 +60,23 @@ function requestHandler(msg_event, response, Http_completion) {
 // Make a request to the OpenAI API
 function chat(msg_event, model, bot_context) {
     logging.logger.debug(bot_context);
-    var model_name = "None";
-    var avail_models = config.openai.models;
-    if (!avail_models[model]) {
-        throw "Invalid model: " + model;
-    }
-    else {
-        var data = {};
-        model_name = avail_models[model];
-        data.model = model_name;
-        data.messages = bot_context;
-        logging.logger.info("url: " + config.openai.url);
+    var data = {};
+    data.model = model;
+    data.messages = bot_context;
+    logging.logger.info("url: " + config.openai.url);
 
-        const Http_completion = new XMLHttpRequest();
-        Http_completion.open("POST", config.openai.url);
-        Http_completion.setRequestHeader("Content-Type", "application/json");
-        Http_completion.setRequestHeader("Authorization", "Bearer " + config.openai.api_key);
-        Http_completion.send(JSON.stringify(data));
-        Http_completion.onreadystatechange = (e) => {
-            if (Http_completion.readyState == 4) {
-                const response = Http_completion.responseText;
-                requestHandler(msg_event, response, Http_completion);
-            }
+    const Http_completion = new XMLHttpRequest();
+    Http_completion.open("POST", config.openai.url);
+    Http_completion.setRequestHeader("Content-Type", "application/json");
+    Http_completion.setRequestHeader("Authorization", "Bearer " + config.openai.api_key);
+    Http_completion.send(JSON.stringify(data));
+    Http_completion.onreadystatechange = (e) => {
+        if (Http_completion.readyState == 4) {
+            const response = Http_completion.responseText;
+            requestHandler(msg_event, response, Http_completion);
         }
-        return Http_completion;
     }
+    return Http_completion;
 }
 
 module.exports = { chat };

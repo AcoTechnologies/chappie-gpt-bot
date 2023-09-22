@@ -24,7 +24,7 @@ const initUsers = async () => {
     try {
         // Insert test user data
         await client.query(`
-            INSERT INTO user (id, created_at, updated_at)
+            INSERT INTO users (id, created_at, updated_at)
             VALUES ('${bot_owner}', NOW(), NOW());`);
         client.release();
         console.log('Test user data inserted successfully.');
@@ -39,7 +39,7 @@ const initBotRoles = async () => {
     try {
         // Insert test bot_role data
         await client.query(`
-            INSERT INTO bot_role (name, created_at, updated_at)
+            INSERT INTO bot_roles (name, created_at, updated_at)
             VALUES (
                 ('owner', NOW(), NOW()),
                 ('admin', NOW(), NOW()),
@@ -72,7 +72,7 @@ const initPermissions = async () => {
     try {
         // Insert test permission data
         await client.query(`
-            INSERT INTO permission (name, created_at, updated_at)
+            INSERT INTO permissions (name, created_at, updated_at)
             VALUES (
                 ('command_ping', NOW(), NOW()),
                 ('command_enable', NOW(), NOW()),
@@ -94,7 +94,7 @@ const initRolePermissions = async () => {
     try {
         // Insert test role_permission data
         await client.query(`
-            INSERT INTO role_permission (role_id, permission_id, created_at, updated_at)
+            INSERT INTO role_permissions (role_id, permission_id, created_at, updated_at)
             VALUES (
                 ('owner', 'command_ping', NOW(), NOW()),
                 ('owner', 'command_enable', NOW(), NOW()),
@@ -128,7 +128,7 @@ const initUserRoles = async () => {
     try {
         // Insert test user_role data
         await client.query(`
-            INSERT INTO user_role (user_id, role_id, created_at, updated_at)
+            INSERT INTO user_roles (user_id, role_id, created_at, updated_at)
             VALUES (
                 ('${bot_owner}', 'owner', NOW(), NOW()),
                 ('${bot_owner}', 'admin', NOW(), NOW()),
@@ -150,7 +150,7 @@ const initBotPresets = async () => {
         // Insert test bot_preset data
         keys.forEach(async (key) => {
             await client.query(`
-                INSERT INTO bot_preset (name, data, created_at, updated_at)
+                INSERT INTO bot_presets (name, data, created_at, updated_at)
                 VALUES (
                     ('${key}', '${JSON.stringify({key: presets[key]})}', NOW(), NOW())
                 )`);
@@ -171,7 +171,7 @@ const initGuildPresets = async () => {
         // Insert test guild_preset data
         keys.forEach(async (key) => {
             await client.query(`
-                INSERT INTO guild_preset (preset_id, guild_id, created_at, updated_at)
+                INSERT INTO guild_presets (preset_id, guild_id, created_at, updated_at)
                 VALUES (
                     ('${key}', '${guild_id}', NOW(), NOW())
                 )`);
@@ -189,7 +189,7 @@ const initGuild = async () => {
     try {
         // Insert test guild data
         await client.query(`
-            INSERT INTO guild (id, bot_owner, created_at, updated_at)
+            INSERT INTO guilds (id, bot_owner, created_at, updated_at)
             VALUES ('${guild_id}', '${bot_owner}', NOW(), NOW());`);
         client.release();
         console.log('Test guild data inserted successfully.');
@@ -204,7 +204,7 @@ const initGuildApiActivation = async () => {
     try {
         // Insert test guild_api_activation data
         await client.query(`
-            INSERT INTO guild_api_activation (guild_id, api_key, user_id, scope, created_at, updated_at)
+            INSERT INTO guild_api_activations (guild_id, api_key, user_id, scope, created_at, updated_at)
             VALUES ('${guild_id}', '${openai_api_key}', '${bot_owner}', 'chat', NOW(), NOW());`);
         client.release();
         console.log('Test guild_api_activation data inserted successfully.');
@@ -220,7 +220,7 @@ const initScope = async () => {
     try {
         // Insert test scope data
         await client.query(`
-            INSERT INTO scope (name, created_at, updated_at)
+            INSERT INTO scopes (name, created_at, updated_at)
             VALUES ('chat', NOW(), NOW());`);
         client.release();
         console.log('Test scope data inserted successfully.');

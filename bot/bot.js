@@ -1,5 +1,5 @@
 var logging = require('./pkg/logger.js');
-var config = require('./config/config.json');
+// var config = require('./config/config.json');
 var presets = require('./config/bot-presets.json');
 var phrases = require('./config/phrases.json');
 var openai = require('./pkg/openai-request.js');
@@ -11,7 +11,8 @@ logging.logger.level = 'debug';
 
 logging.logger.info("Starting bot...");
 
-bot_name = "Chappie";
+const bot_name = "Chappie";
+const bot_model = "gpt-3.5-turbo"
 
 class ChatEntry {
     constructor(author, content) {
@@ -99,7 +100,7 @@ function scanForKeyword(message, keyword) {
 var sessions = [];
 
 // whitelisted users
-const priviledged_user_ids = config.auth.priviledged_ids;
+const priviledged_user_ids = [process.env.DISCORD_OWNER_ID];
 
 var ai_enabled = false;
 
@@ -136,7 +137,7 @@ client.on('interactionCreate', async interaction => {
     }
     else if (interaction.commandName === 'model') {
         logging.logger.info("Model command");
-        await interaction.reply('Model: ' + config.openai.model);
+        await interaction.reply('Model: ' + bot_model);
         return;
     }
     else if (priviledged) { // priviledged user commands
@@ -265,14 +266,14 @@ client.on('messageCreate', msg_event => {
     logging.logger.info("Message: " + content);
     logging.logger.info("Author: " + author);
     // Check if the message is from the bot
-    if (author_id != config.auth.bot_client_id) {
+    if (author_id != process.env.DISCORD_BOT_ID) {
         // Respond with ai response
         msg_event.channel.sendTyping();
         var bot_context = session.history.getLatestLog();
-        openai.chat(msg_event, config.openai.model, bot_context);
+        openai.chat(msg_event, bot_model, bot_context);
     }
 
 });
 
 // login to Discord with your app's token, this starts the bot
-client.login(config.auth.token);
+client.login(process.env.DISCORD_TOKEN);
