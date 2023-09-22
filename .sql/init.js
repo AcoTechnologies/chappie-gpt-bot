@@ -24,9 +24,9 @@ const initUsers = async () => {
     try {
         // Insert test user data
         await client.query(`
-            INSERT INTO users (id, created_at, updated_at)
-            VALUES ('${bot_owner}', NOW(), NOW());`);
-        client.release();
+            INSERT INTO users (id)
+            VALUES ('${bot_owner}');`);
+        
         console.log('Test user data inserted successfully.');
 
     } catch(error) {
@@ -39,13 +39,12 @@ const initBotRoles = async () => {
     try {
         // Insert test bot_role data
         await client.query(`
-            INSERT INTO bot_roles (name, created_at, updated_at)
-            VALUES (
-                ('owner', NOW(), NOW()),
-                ('admin', NOW(), NOW()),
-                ('member', NOW(), NOW())
-            )`);
-        client.release();
+            INSERT INTO bot_roles (role_name)
+            VALUES 
+                ('owner'),
+                ('admin'),
+                ('member')`);
+        
         console.log('Test bot_role data inserted successfully.');
 
     } catch(error) {
@@ -72,16 +71,16 @@ const initPermissions = async () => {
     try {
         // Insert test permission data
         await client.query(`
-            INSERT INTO permissions (name, created_at, updated_at)
-            VALUES (
-                ('command_ping', NOW(), NOW()),
-                ('command_enable', NOW(), NOW()),
-                ('command_disable', NOW(), NOW()),
-                ('command_model', NOW(), NOW()),
-                ('command_setmode', NOW(), NOW()),
-                ('chat', NOW(), NOW())
-            )`);
-        client.release();
+            INSERT INTO permissions (permission_name)
+            VALUES 
+                ('command_ping'),
+                ('command_enable'),
+                ('command_disable'),
+                ('command_model'),
+                ('command_setmode'),
+                ('chat')
+            `);
+        
         console.log('Test permission data inserted successfully.');
 
     } catch(error) {
@@ -92,30 +91,35 @@ const initPermissions = async () => {
 // Function to init role_permission table
 const initRolePermissions = async () => {
     try {
+        // get permissions
+        var permissions = await client.query(`
+            SELECT permission_name, id
+            FROM permissions
+            `);
+
+        // get all bot roles
+        var bot_roles = await client.query(`
+            SELECT role_name, id
+            FROM bot_roles
+            `);
+        // setup values query with ids to match name map
+        const map = {
+            "owner": ["command_ping","command_enable","command_disable","command_model","command_setmode","chat"],
+            "admin": ["command_ping","command_enable","command_disable","command_model","command_setmode","chat"],
+            "member": ["command_ping","command_enable","command_disable","command_model","command_setmode","chat"]
+        };
+        var values = "";
+        bot_roles.rows.forEach((role) => {
+            map[role.role_name].forEach((permission) => {
+                values += `('${role.id}', '${permissions.rows.find(p => p.permission_name == permission).id}'),`;
+
+            });
+        });
         // Insert test role_permission data
         await client.query(`
-            INSERT INTO role_permissions (role_id, permission_id, created_at, updated_at)
-            VALUES (
-                ('owner', 'command_ping', NOW(), NOW()),
-                ('owner', 'command_enable', NOW(), NOW()),
-                ('owner', 'command_disable', NOW(), NOW()),
-                ('owner', 'command_model', NOW(), NOW()),
-                ('owner', 'command_setmode', NOW(), NOW()),
-                ('owner', 'chat', NOW(), NOW()),
-                ('admin', 'command_ping', NOW(), NOW()),
-                ('admin', 'command_enable', NOW(), NOW()),
-                ('admin', 'command_disable', NOW(), NOW()),
-                ('admin', 'command_model', NOW(), NOW()),
-                ('admin', 'command_setmode', NOW(), NOW()),
-                ('admin', 'chat', NOW(), NOW()),
-                ('member', 'command_ping', NOW(), NOW()),
-                ('member', 'command_enable', NOW(), NOW()),
-                ('member', 'command_disable', NOW(), NOW()),
-                ('member', 'command_model', NOW(), NOW()),
-                ('member', 'command_setmode', NOW(), NOW()),
-                ('member', 'chat', NOW(), NOW())
-            )`);
-        client.release();
+            INSERT INTO role_permissions (role_id, permission_id)
+            VALUES ${values.slice(0, -1)}`);
+        
         console.log('Test role_permission data inserted successfully.');
 
     } catch(error) {
@@ -126,15 +130,20 @@ const initRolePermissions = async () => {
 // Function to init user_role table
 const initUserRoles = async () => {
     try {
-        // Insert test user_role data
+        // get the role id for owner
+        var owner_role_ids = await client.query(`
+            SELECT id
+            FROM bot_roles
+            WHERE role_name = 'owner'
+            `);
+        var owner_role_id = owner_role_ids.rows[0].id;
+        // Insert test user_role data: owner, admin, member
         await client.query(`
-            INSERT INTO user_roles (user_id, role_id, created_at, updated_at)
-            VALUES (
-                ('${bot_owner}', 'owner', NOW(), NOW()),
-                ('${bot_owner}', 'admin', NOW(), NOW()),
-                ('${bot_owner}', 'member', NOW(), NOW())
-            )`);
-        client.release();
+            INSERT INTO user_roles (user_id, role_id)
+            VALUES 
+                ('${bot_owner}', '${owner_role_id}')
+            `);
+        
         console.log('Test user_role data inserted successfully.');
 
     } catch(error) {
@@ -145,41 +154,48 @@ const initUserRoles = async () => {
 // Function to init bot_preset table
 const initBotPresets = async () => {
     try {
-        keys = Object.keys(presets);
+        var keys = Object.keys(presets);
 
         // Insert test bot_preset data
-        keys.forEach(async (key) => {
-            await client.query(`
-                INSERT INTO bot_presets (name, data, created_at, updated_at)
-                VALUES (
-                    ('${key}', '${JSON.stringify({key: presets[key]})}', NOW(), NOW())
-                )`);
-        });
-        client.release();
+        for (const key of keys) {
+            const presetData = JSON.stringify({ [key]: presets[key] });
+            await client.query({
+                text: 'INSERT INTO bot_presets (preset_name, preset_data) VALUES ($1, $2)',
+                values: [key, presetData],
+            });
+        }
+
         console.log('Test bot_preset data inserted successfully.');
 
-    } catch(error) {
+    } catch (error) {
         console.error('Error inserting test bot_preset data:', error);
     }
 };
 
+
 // Function to init guild_preset table
 const initGuildPresets = async () => {
     try {
-        keys = Object.keys(presets);
+        // Select all preset IDs from bot_presets
+        const presetIdsQuery = await client.query(`
+            SELECT id
+            FROM bot_presets
+        `);
 
-        // Insert test guild_preset data
-        keys.forEach(async (key) => {
+        // Extract the IDs from the query result
+        const presetIds = presetIdsQuery.rows.map((row) => row.id);
+
+        // Insert test guild_preset data for each preset ID
+        for (const presetId of presetIds) {
             await client.query(`
-                INSERT INTO guild_presets (preset_id, guild_id, created_at, updated_at)
-                VALUES (
-                    ('${key}', '${guild_id}', NOW(), NOW())
-                )`);
-        });
-        client.release();
+                INSERT INTO guild_presets (preset_id, guild_id)
+                VALUES ('${presetId}', '${guild_id}')
+            `);
+        }
+
         console.log('Test guild_preset data inserted successfully.');
 
-    } catch(error) {
+    } catch (error) {
         console.error('Error inserting test guild_preset data:', error);
     }
 };
@@ -189,9 +205,9 @@ const initGuild = async () => {
     try {
         // Insert test guild data
         await client.query(`
-            INSERT INTO guilds (id, bot_owner, created_at, updated_at)
-            VALUES ('${guild_id}', '${bot_owner}', NOW(), NOW());`);
-        client.release();
+            INSERT INTO guilds (id, bot_owner)
+            VALUES ('${guild_id}', '${bot_owner}');`);
+        
         console.log('Test guild data inserted successfully.');
 
     } catch(error) {
@@ -202,11 +218,19 @@ const initGuild = async () => {
 // Function to init guild_api_activation table
 const initGuildApiActivation = async () => {
     try {
+        // get scope id of scope 'global'
+        var scope_id = await client.query(`
+            SELECT id
+            FROM scopes
+            WHERE scope_name = 'global'
+            `);
+        scope_id = scope_id.rows[0].id;
+
         // Insert test guild_api_activation data
         await client.query(`
-            INSERT INTO guild_api_activations (guild_id, api_key, user_id, scope, created_at, updated_at)
-            VALUES ('${guild_id}', '${openai_api_key}', '${bot_owner}', 'chat', NOW(), NOW());`);
-        client.release();
+            INSERT INTO guild_api_activations (guild_id, api_key, user_id, scope_id)
+            VALUES ('${guild_id}', '${openai_api_key}', '${bot_owner}', '${scope_id}');`);
+        
         console.log('Test guild_api_activation data inserted successfully.');
 
     } catch(error) {
@@ -220,9 +244,9 @@ const initScope = async () => {
     try {
         // Insert test scope data
         await client.query(`
-            INSERT INTO scopes (name, created_at, updated_at)
-            VALUES ('chat', NOW(), NOW());`);
-        client.release();
+            INSERT INTO scopes (scope_name)
+            VALUES ('global');`);
+        
         console.log('Test scope data inserted successfully.');
         
     } catch(error) {
@@ -230,18 +254,20 @@ const initScope = async () => {
     }
 };
 
-// Call the functions to insert test data
+// Call the functions to insert test data, in order
 
-initUsers();
-initBotRoles();
-initPermissions();
-initRolePermissions();
-initUserRoles();
-initBotPresets();
-initGuildPresets();
-initGuild();
-initGuildApiActivation();
-initScope();
+await initUsers();
+await initScope();
+await initBotRoles();
+await initPermissions();
+await initRolePermissions();
+await initUserRoles();
+await initBotPresets();
+await initGuild();
+await initGuildPresets();
+await initGuildApiActivation();
+
 
 // Close the database connection
+client.release();
 pool.end();
