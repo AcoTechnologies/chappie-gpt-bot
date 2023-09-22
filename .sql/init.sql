@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS guilds (
     bot_owner INT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (bot_owner) REFERENCES "user" (id)
+    FOREIGN KEY (bot_owner) REFERENCES users(id)
 );
 
 -- Create the guild_sessions table for storing discord guild_sessions data
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS guild_sessions (
     active BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (guild_id) REFERENCES guild (id)
+    FOREIGN KEY (guild_id) REFERENCES guilds(id)
 );
 
 -- Create the bot roles table for storing roles that the bot owner and administrators can assign
@@ -48,8 +48,8 @@ CREATE TABLE IF NOT EXISTS role_permissions (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (role_id, permission_id),
-    FOREIGN KEY (role_id) REFERENCES bot_role (id),
-    FOREIGN KEY (permission_id) REFERENCES permission (id)
+    FOREIGN KEY (role_id) REFERENCES bot_roles (id),
+    FOREIGN KEY (permission_id) REFERENCES permissions (id)
 );
 
 -- Create the user roles table for linking users and roles
@@ -59,8 +59,8 @@ CREATE TABLE IF NOT EXISTS user_roles (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, role_id),
-    FOREIGN KEY (user_id) REFERENCES "user" (id),
-    FOREIGN KEY (role_id) REFERENCES bot_role (id)
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (role_id) REFERENCES bot_roles (id)
 );
 
 -- Create the bot presets table for storing bot presets
@@ -79,14 +79,14 @@ CREATE TABLE IF NOT EXISTS guild_presets (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (preset_id, guild_id),
-    FOREIGN KEY (preset_id) REFERENCES bot_preset (id),
-    FOREIGN KEY (guild_id) REFERENCES guild (id)
+    FOREIGN KEY (preset_id) REFERENCES bot_presets (id),
+    FOREIGN KEY (guild_id) REFERENCES guilds(id)
 );
 
 -- Create the scopes table for storing API scopes
 CREATE TABLE IF NOT EXISTS scopes (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
+    scope_name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -97,9 +97,11 @@ CREATE TABLE IF NOT EXISTS guild_api_activations (
     guild_id VARCHAR(255) NOT NULL,
     api_key VARCHAR(255) NOT NULL,
     user_id INT NOT NULL,
-    scope VARCHAR(255) NOT NULL,
+    scope_id INT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (guild_id) REFERENCES guild (id)
+    FOREIGN KEY (guild_id) REFERENCES guilds(id),
+    FOREIGN KEY (user_id) REFERENCES users (id),
+    FOREIGN KEY (scope_id) REFERENCES scopes (id)
 );
 
