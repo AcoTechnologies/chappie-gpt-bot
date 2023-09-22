@@ -1,9 +1,7 @@
 {
     "bot_token": "session token for the bot",
     "bot_client_id": "the bot client id",
-    "owners": [
-        "your discord user id"
-    ],
+    "owner": "your discord user id",
     "admins": [],
     "guild_id": "your discord guild id",
     "openai_api_key": "secret api key for openai api"
