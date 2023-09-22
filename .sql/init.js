@@ -525,12 +525,14 @@ const initGuildPresets = async () => {
     try {
         const client = await pool.connect();
 
+        keys = Object.keys(presets);
+
         // Insert test guild_preset data
-        presets.forEach(async (preset) => {
+        keys.forEach(async (key) => {
             await client.query(`
                 INSERT INTO guild_preset (preset_id, guild_id, created_at, updated_at)
                 VALUES (
-                    ('${preset.name}', '${guild_id}', NOW(), NOW())
+                    ('${key}', '${guild_id}', NOW(), NOW())
                 )`);
         });
         client.release();

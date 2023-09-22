@@ -16,7 +16,8 @@
   "repository": "git@github.com:WebRodent/chappie-gpt-bot.git",
   "license": "MIT",
   "scripts": {
-    "start": "bun bot/bot.js"
+    "start": "bun bot/bot.js",
+    "db-init": "bun .sql/init.js"
   },
   "devDependencies": {
     "bun-types": "latest"
