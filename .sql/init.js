@@ -1,6 +1,5 @@
 
 const { Pool } = require('pg');
-const init_data = require('./init.json');
 const presets = require('../bot/config/bot-presets.json');
 
 
@@ -10,12 +9,9 @@ const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
 });
 
-const guild_id = init_data.guild_id;
-const bot_owner = init_data.owner;
-const bot_admins = init_data.admins;
-const bot_token = init_data.bot_token;
-const bot_client_id = init_data.bot_client_id;
-const openai_api_key = init_data.openai_api_key;
+const guild_id = process.env.DISCORD_GUILD_ID;
+const bot_owner = process.env.DISCORD_OWNER_ID;
+const openai_api_key = process.env.OPENAI_API_KEY;
 
 const client = await pool.connect();
 
