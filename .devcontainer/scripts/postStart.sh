@@ -28,9 +28,17 @@ echo "PostgreSQL connection successful for database postgres"
 # Check PostgreSQL connection to database bot
 echo "Testing PostgreSQL connection for database bot..."
 if ! test_postgres_connection bot; then
-    echo "Database bot not found, creating one..."
-    psql -h db -U postgres -d postgres -c "CREATE DATABASE bot;"
-    psql -h db -U postgres -d bot -f .sql/init.sql
-    bun .sql/init.js  # Use the correct command for your JavaScript backend
+    source .devcontainer/devcontainer.env # load to check if the vairables are set
+    if [[ $DISCORD_OWNER_ID == "OWNER_ID_NOT_SET" || $DISCORD_GUILD_ID == "GUILD_ID_NOT_SET" || $OPENAI_API_KEY == "API_KEY_NOT_SET" ]]; then
+        echo "WARNING: Database INIT could not complete! devcontainer.env is not configured, please fill in the correct values, the restart the container to get initialized"
+        exit 1
+    else
+        echo "Database bot not found, creating one..."
+        psql -h db -U postgres -d postgres -c "CREATE DATABASE bot;"
+        psql -h db -U postgres -d bot -f .sql/init.sql
+        bun .sql/init.js 
+        echo "Database bot created successfully, and initialized with provided values"
+        exit 0
+    fi
 fi
 echo "PostgreSQL connection successful for database bot"
