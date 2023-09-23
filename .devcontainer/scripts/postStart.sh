@@ -29,7 +29,7 @@ echo "PostgreSQL connection successful for database postgres"
 echo "Testing PostgreSQL connection for database bot..."
 if ! test_postgres_connection bot; then
     source .devcontainer/devcontainer.env # load to check if the vairables are set
-    if [[ $DISCORD_OWNER_ID == "OWNER_ID_NOT_SET" || $DISCORD_GUILD_ID == "GUILD_ID_NOT_SET" || $OPENAI_API_KEY == "API_KEY_NOT_SET" ]]; then
+    if [[ $DISCORD_OWNER_ID == "OWNER_ID_NOT_SET" || $DISCORD_OWNER_USERNAME == "OWNER_USERNAME_NOT_SET" || $DISCORD_GUILD_ID == "GUILD_ID_NOT_SET" || $OPENAI_API_KEY == "API_KEY_NOT_SET" ]]; then
         echo "WARNING: Database INIT could not complete! devcontainer.env is not configured, please fill in the correct values, the restart the container to get initialized"
         exit 1
     else
