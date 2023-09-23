@@ -30,7 +30,8 @@
 				"github.copilot",
 				"ms-azuretools.vscode-docker",
 				"oven.bun-vscode",
-				"ckolkman.vscode-postgres"
+				"ckolkman.vscode-postgres",
+				"ms-vscode-remote.remote-containers"
 			]
 		}
 	}
