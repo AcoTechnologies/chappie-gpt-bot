@@ -1,21 +1,18 @@
-var logger = require('winston');
-var auth = require('./auth.json');
-var presets = require('./bot-presets.json');
-var phrases = require('./phrases.json');
-var openai = require('./openai-request.js');
-var openai_config = require('./openai.json');
+var logging = require('./pkg/logger.js');
+// var config = require('./config/config.json');
+var presets = require('./config/bot-presets.json');
+var phrases = require('./config/phrases.json');
+var openai = require('./pkg/openai-request.js');
 const { REST } = require('@discordjs/rest');
 const { Client, GatewayIntentBits, SlashCommandBuilder, Routes } = require('discord.js');
 
-// Configure logger settings
-logger.remove(logger.transports.Console);
-logger.add(new logger.transports.Console, {
-    colorize: true
-});
+// Configure logging.logger settings
+logging.logger.level = 'debug';
 
-logger.level = 'debug';
+logging.logger.info("Starting bot...");
 
-bot_name = "Chappie";
+const bot_name = "Chappie";
+const bot_model = "gpt-3.5-turbo"
 
 class ChatEntry {
     constructor(author, content) {
@@ -46,13 +43,8 @@ class ChatHistory {
         history_flipped.forEach(entry => {
             bot_context_token_count += entry.content.split(" ").length;
             if (bot_context_token_count > 2400) { // max token count is 4096, and it should be less than that
-                this.bot_preset.forEach(prefixEntry => {
-                    bot_context.unshift({
-                        "role": prefixEntry.role,
-                        "content": prefixEntry.content
-                    });
-                });
-                return bot_context;
+                const complete_context = this.bot_preset.concat(bot_context);
+                return complete_context;
             }
             if (entry.author == bot_name) {
                 bot_context.unshift({
@@ -65,21 +57,12 @@ class ChatHistory {
                     "role": "user",
                     "content": entry.author + ": " + entry.content
                 });
-                /*
-                bot_context.push({
-                    "role": "user",
-                    "content": entry.author + ": " + entry.content
-                });
-                */
             }
         });
-        this.bot_preset.forEach(prefixEntry => {
-            bot_context.unshift({
-                "role": prefixEntry.role,
-                "content": prefixEntry.content
-            });
-        });
-        return bot_context;
+
+        // insert this.bot_preset at the start of the array, in the current order
+        const complete_context = this.bot_preset.concat(bot_context);
+        return complete_context;
     }
     changePreset(newPreset) {
         try {
@@ -99,15 +82,15 @@ class ChatHistory {
 }
 
 class ChatSession {
-    constructor(channelId) {
+    constructor(channelId, active) {
         this.channelId = channelId;
-        this.active = false;
+        this.active = active;
         this.history = new ChatHistory();
     }
 }
 
 function scanForKeyword(message, keyword) {
-    if (message.toLowerCase().includes(keyword)) {
+    if (message.toLowerCase().includes(keyword.toLowerCase())) {
         return true;
     } else {
         return false;
@@ -117,9 +100,7 @@ function scanForKeyword(message, keyword) {
 var sessions = [];
 
 // whitelisted users
-const whitelisted_ids = auth.whitelisted_ids;
-
-const priviledged_user_ids = auth.priviledged_ids;
+const priviledged_user_ids = [process.env.DISCORD_OWNER_ID];
 
 var ai_enabled = false;
 
@@ -137,39 +118,37 @@ client.on('ready', () => {
 });
 
 client.on('interactionCreate', async interaction => {
-    logger.debug(interaction);
+    logging.logger.debug(interaction);
     // check if user is priviledged
     priviledged = false;
     if (priviledged_user_ids.includes(interaction.user.id)) {
         priviledged = true;
     }
-    logger.info("Priviledged: " + priviledged);
+    logging.logger.info("Priviledged: " + priviledged);
     if (!interaction.isChatInputCommand() && !ai_enabled) {
-        logger.info("Not a chat input command");
+        logging.logger.info("Not a chat input command");
         return;
     }
     // none-priviledged commands
     else if (interaction.commandName === 'ping') {
-        logger.info("Pong!");
+        logging.logger.info("Pong!");
         await interaction.reply('Pong!');
         return;
     }
     else if (interaction.commandName === 'model') {
-        logger.info("Model command");
-        await interaction.reply('Model: ' + openai_config.model);
+        logging.logger.info("Model command");
+        await interaction.reply('Model: ' + bot_model);
         return;
     }
     else if (priviledged) { // priviledged user commands
         if (interaction.commandName === 'enable') {
-            logger.info("Enabling AI");
+            logging.logger.info("Enabling AI");
             ai_enabled = true;
             // search for session
             var session = sessions.find(session => session.channelId == interaction.channelId);
             // if session does not exist, create it
             if (session == undefined) {
-                session = new ChatSession(interaction.channelId);
-                session.active = true;
-                sessions.push(session);
+                sessions.push(new ChatSession(interaction.channelId, true));
             }
             // if session exists, set it to active
             else {
@@ -179,15 +158,13 @@ client.on('interactionCreate', async interaction => {
             return;
         }
         else if (interaction.commandName === 'disable') {
-            logger.info("Disabling AI");
+            logging.logger.info("Disabling AI");
             ai_enabled = false;
             // search for session
             var session = sessions.find(session => session.channelId == interaction.channelId);
             // if session does not exist, create it
             if (session == undefined) {
-                session = new ChatSession(interaction.channelId);
-                session.active = false;
-                sessions.push(session);
+                sessions.push(new ChatSession(interaction.channelId, false));
             }
             // if session exists, set active to false
             else {
@@ -200,7 +177,7 @@ client.on('interactionCreate', async interaction => {
         // command to change mode
         else if (interaction.commandName === 'setmode') {
             // this will set the AI's preset
-            logger.info("Setting mode");
+            logging.logger.info("Setting mode");
             // get the preset from the interaction
             var preset = interaction.options.getString('mode');
             // search for session
@@ -221,12 +198,12 @@ client.on('interactionCreate', async interaction => {
     }
     else {
         if (!priviledged) {
-            logger.info("Not a priviledged user");
+            logging.logger.info("Not a priviledged user");
             await interaction.reply('BIOS error: Access denied!');
             return;
         }
         else {
-            logger.info("Not a valid command");
+            logging.logger.info("Not a valid command");
             await interaction.reply('ERROR: INPUT UNRECOGNIZED!');
             return;
         }
@@ -236,123 +213,67 @@ client.on('interactionCreate', async interaction => {
 
 
 // create a on message event
-client.on('messageCreate', message => {
+client.on('messageCreate', msg_event => {
 
     // Message content
-    const content = message.content
+    const content = msg_event.content
 
     // Message author
-    var author = message.author.global_name
+    var author = msg_event.author.global_name
     if (author == undefined) {
-        author = message.author.username
+        author = msg_event.author.username
     }
     // Message author id
-    const author_id = message.author.id
+    const author_id = msg_event.author.id
 
     // if session does not exist, create it
-    var session = sessions.find(session => session.channelId == message.channelId);
+    var session = sessions.find(session => session.channelId == msg_event.channelId);
     if (session == undefined) {
-        logger.info("Session does not exist: " + session.channelId);
-        session = new ChatSession(message.channelId);
-        sessions.push(session);
+        logging.logger.info("Session does not exist: " + msg_event.channelId + ", creating it");
+        sessions.push(new ChatSession(msg_event.channelId, false));
     } else {
-        logger.debug("Session exists: " + session.channelId);
+        logging.logger.debug("Session exists: " + session.channelId + ", active: " + session.active);
     }
 
     // if session is not active, return
     if (!session.active) {
-        logger.info("Session is not active: " + session.channelId);
+        logging.logger.info("Session is not active: " + session.channelId + ", returning");
         return;
     } else {
-        logger.debug("Session is active: " + session.channelId);
+        logging.logger.debug("Session is active: " + session.channelId + ", using it");
     }
 
     session.history.addEntry(author, content);
 
-    var botMentioned = scanForKeyword(message.content, "chappie");
+    var botMentioned = scanForKeyword(msg_event.content, bot_name);
 
     if (!botMentioned) {
-        logger.info("false");
+        logging.logger.info("false");
         return;
     } else {
-        logger.debug("true");
+        logging.logger.debug("true");
     }
 
     if (!ai_enabled) {
-        logger.info("AI is not enabled");
+        logging.logger.info("AI is not enabled");
         return;
     } else {
-        logger.debug("AI is enabled");
+        logging.logger.debug("AI is enabled");
     }
 
 
     // log content, user
-    logger.info("Message: " + content);
-    logger.info("Author: " + author);
-
-
-    // Check if the message is from a whitelisted user
-    if (whitelisted_ids.includes(author_id) && author_id != auth.client_id) {
+    logging.logger.info("Message: " + content);
+    logging.logger.info("Author: " + author);
+    // Check if the message is from the bot
+    if (author_id != process.env.DISCORD_BOT_ID) {
         // Respond with ai response
-        message.channel.sendTyping();
+        msg_event.channel.sendTyping();
         var bot_context = session.history.getLatestLog();
-        openai.openaiRequest(openai_config.model, bot_context, function (response, Http_completion) {
-            if (Http_completion.status != 200) {
-                logger.error("Error: " + Http_completion.status);
-                return;
-            }
-            try {
-                logger.info("Response: " + response);
-                var json = JSON.parse(response);
-                // if the response contains key message with value that contains 'overloaded'
-                if (json['message'] && json['message'].includes(
-                    'That model is currently overloaded with other requests.')) {
-                    // stops sending typing indicator
-                    message.reply("Chappie is currently overloaded with other requests. Please try again later.");
-                    // log the error
-                    logger.error("Error: " + json['message']);
-                    return;
-                }
-                var bot_response = json.choices[0].message.content;
-                // send the bot response, within a try catch
-                try {
-                    // if the bot response is longer than 2000 characters, throw an error with code 50035
-                    if (bot_response.length > 2000) {
-                        throw { code: 50035, message: "Message too long" };
-                    }
-                    message.reply(bot_response);
-                }
-                catch (e) {
-                    // if it is a discord api error, log it
-                    // if it the error code is 50035, it is a message too long error
-                    // so send the first 1500 characters of the response, and send the rest in another message, split by newlines
-                    if (e.code == 50035) {
-                        logger.info("Message too long, splitting into multiple messages");
-                        message_lines = bot_response.split("\n");
-                        characters_in_message = 0;
-                        reduces_response = "";
-                        message_lines.forEach(line => {
-                            if (characters_in_message > 1500) {
-                                message.reply(reduces_response);
-                                reduces_response = "";
-                                characters_in_message = 0;
-                            }
-                            reduces_response += line + "\n";
-                            characters_in_message += line.length;
-                        });
-                        message.reply(reduces_response);
-                    } else {
-                        logger.error(e);
-                    }
-                }
-            } catch (e) {
-                console.log(e);
-            }
-        });
+        openai.chat(msg_event, bot_model, bot_context);
     }
 
 });
 
-console.log("Starting bot...");
-
-client.login(auth.token);
+// login to Discord with your app's token, this starts the bot
+client.login(process.env.DISCORD_TOKEN);

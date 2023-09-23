@@ -1,1 +1,16 @@
+# packages and dependencies
 node_modules
+
+# config files
+# old
+openai.json
+auth.json
+# new
+config.json
+init.json
+
+# log files
+bot.log
+
+# env files
+devcontainer.env

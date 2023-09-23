@@ -1,13 +1,7 @@
-var logger = require('winston');
+var logger = require('../pkg/logger');
 var auth = require('./auth.json');
 const { REST } = require('@discordjs/rest');
 const { SlashCommandBuilder, Routes } = require('discord.js');
-
-// Configure logger settings
-logger.remove(logger.transports.Console);
-logger.add(new logger.transports.Console, {
-    colorize: true
-});
 
 // configure commands available to users
 const commands = [

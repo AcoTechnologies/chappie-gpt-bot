@@ -5,27 +5,34 @@
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "devcontainer",
 	"workspaceFolder": "/workspaces/chappie-gpt-bot",
-
 	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
-
+	"features": {
+		"ghcr.io/itsmechlark/features/postgresql": {
+			"version": "15"
+		}
+	},
+	"containerEnv": {
+		"PGPASSWORD": "postgres"
+	},
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// This can be used to network with other containers or with the host.
 	// "forwardPorts": [3000, 5432],
-
-	// Use 'postCreateCommand' to run commands after the container is created.
+	// Use 'initializeCommand' to run commands when the container is first created.
+	"initializeCommand": ".devcontainer/scripts/initialize",
+	// Use "postCreateCommand" to run commands after the container is created.
 	"postCreateCommand": "bash .devcontainer/scripts/postCreate.sh",
-
+	// Use 'postStartCommand' to run commands after the container is started.
+	"postStartCommand": ".devcontainer/scripts/postStart.sh",
 	// Configure tool-specific properties.
 	"customizations": {
 		"vscode": {
 			"extensions": [
 				"github.copilot",
-				"ms-azuretools.vscode-docker"
+				"ms-azuretools.vscode-docker",
+				"oven.bun-vscode"
 			]
 		}
 	}
-
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
 }
