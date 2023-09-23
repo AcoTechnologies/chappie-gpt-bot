@@ -29,7 +29,8 @@
 			"extensions": [
 				"github.copilot",
 				"ms-azuretools.vscode-docker",
-				"oven.bun-vscode"
+				"oven.bun-vscode",
+				"ckolkman.vscode-postgres"
 			]
 		}
 	}

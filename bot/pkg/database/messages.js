@@ -28,6 +28,7 @@ async function addMessage(session, user, message) {
             var last_message_timestamp = queryResult.rows[0].timestamp;
             var current_timestamp = queryResult2.rows[0].timestamp;
             var difference = current_timestamp - last_message_timestamp;
+            logging.logger.debug('time difference from last message:', difference);
             if (difference < 120000) {
                 timerbypass = true;
             }
