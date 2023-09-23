@@ -17,7 +17,8 @@
   "license": "MIT",
   "scripts": {
     "start": "bun bot/bot.js",
-    "db-init": "bun .sql/init.js"
+    "db-init": "bun .sql/cmd/init.js",
+    "db-rebuild": "bash .sql/scripts/rebuild.sh"
   },
   "devDependencies": {
     "bun-types": "latest"

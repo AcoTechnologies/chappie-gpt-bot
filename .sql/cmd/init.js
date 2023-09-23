@@ -1,6 +1,6 @@
 
 const { Pool } = require('pg');
-const presets = require('../bot/config/bot-presets.json');
+const presets = require('../../bot/config/bot-presets.json');
 
 
 

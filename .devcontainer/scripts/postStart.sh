@@ -35,8 +35,8 @@ if ! test_postgres_connection bot; then
     else
         echo "Database bot not found, creating one..."
         psql -h db -U postgres -d postgres -c "CREATE DATABASE bot;"
-        psql -h db -U postgres -d bot -f .sql/init.sql
-        bun .sql/init.js 
+        psql -h db -U postgres -d bot -f .sql/scripts/init.sql
+        bun db-init
         echo "Database bot created successfully, and initialized with provided values"
         exit 0
     fi
