@@ -1,13 +1,10 @@
 // Database handler for bot's postgresql database
 
 const { Pool } = require('pg');
-const logging = require('./logger');
+const logging = require('../logger');
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false
-    }
 });
 
 pool.on('error', (err, client) => {

@@ -10,7 +10,9 @@ const pool = new Pool({
 });
 
 const guild_id = process.env.DISCORD_GUILD_ID;
-const bot_owner = process.env.DISCORD_OWNER_ID;
+const discord_client_id = process.env.DISCORD_CLIENT_ID;
+const bot_owner_id = process.env.DISCORD_OWNER_ID;
+const bot_owner_username = process.env.DISCORD_OWNER_USERNAME;
 const openai_api_key = process.env.OPENAI_API_KEY;
 
 const client = await pool.connect();
@@ -20,8 +22,8 @@ const initUsers = async () => {
     try {
         // Insert test user data
         await client.query(`
-            INSERT INTO users (id)
-            VALUES ('${bot_owner}');`);
+            INSERT INTO users (id, username)
+            VALUES ('${bot_owner_id}', '${bot_owner_username}'), ( '${discord_client_id}', 'chappie' );`);
         
         console.log('Test user data inserted successfully.');
 
@@ -137,7 +139,7 @@ const initUserRoles = async () => {
         await client.query(`
             INSERT INTO user_roles (user_id, role_id)
             VALUES 
-                ('${bot_owner}', '${owner_role_id}')
+                ('${bot_owner_id}', '${owner_role_id}')
             `);
         
         console.log('Test user_role data inserted successfully.');
@@ -202,7 +204,7 @@ const initGuild = async () => {
         // Insert test guild data
         await client.query(`
             INSERT INTO guilds (id, bot_owner)
-            VALUES ('${guild_id}', '${bot_owner}');`);
+            VALUES ('${guild_id}', '${bot_owner_id}');`);
         
         console.log('Test guild data inserted successfully.');
 
@@ -225,7 +227,7 @@ const initGuildApiActivation = async () => {
         // Insert test guild_api_activation data
         await client.query(`
             INSERT INTO guild_api_activations (guild_id, api_key, user_id, scope_id)
-            VALUES ('${guild_id}', '${openai_api_key}', '${bot_owner}', '${scope_id}');`);
+            VALUES ('${guild_id}', '${openai_api_key}', '${bot_owner_id}', '${scope_id}');`);
         
         console.log('Test guild_api_activation data inserted successfully.');
 

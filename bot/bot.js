@@ -1,8 +1,13 @@
 var logging = require('./pkg/logger.js');
-// var config = require('./config/config.json');
 var presets = require('./config/bot-presets.json');
 var phrases = require('./config/phrases.json');
 var openai = require('./pkg/openai-request.js');
+const { query } = require('./pkg/database/engine.js');
+const { getSession, addSession } = require('./pkg/database/sessions.js');
+const { getUser, addUser } = require('./pkg/database/users.js');
+const { addMessage, getMessages } = require('./pkg/database/messages.js');
+const { chatHandler } = require('./pkg/chat.js');
+const { slashCommandHandler } = require('./pkg/commands.js');
 const { REST } = require('@discordjs/rest');
 const { Client, GatewayIntentBits, SlashCommandBuilder, Routes } = require('discord.js');
 
@@ -28,14 +33,27 @@ class ChatHistory {
         this.history = [];
     }
 
-    addEntry(author, content) {
+    addEntry(author, content) { // This is deprecated, use addEntryToDB instead
         if (this.history.length > 10) {
             this.history.shift();
         }
         this.history.push(new ChatEntry(author, content));
     }
 
-    getLatestLog() {
+    // add entry to db
+    async addEntryToDB(author, content, guild_session_id) {
+        try {
+            // insert the message into the database
+            await query(`
+                INSERT INTO chat_messages (author, content, channel_id)
+                VALUES ('${author}', '${content}', '${guild_session_id}')`); // TODO: this should be encrypted with a secret key that expires every 24 hours
+        } catch (error) {
+            logging.logger.error('Error inserting chat message into db:', error);
+        }
+    }
+
+
+    getLatestLog() { // This is deprecated, use getLatestLogsFromDB instead
         var bot_context = [];
         var bot_context_token_count = 0;
         // create a flipped copy of the history
@@ -64,6 +82,9 @@ class ChatHistory {
         const complete_context = this.bot_preset.concat(bot_context);
         return complete_context;
     }
+
+
+
     changePreset(newPreset) {
         try {
             this.bot_preset = presets[newPreset];
@@ -89,14 +110,6 @@ class ChatSession {
     }
 }
 
-function scanForKeyword(message, keyword) {
-    if (message.toLowerCase().includes(keyword.toLowerCase())) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
 var sessions = [];
 
 // whitelisted users
@@ -114,166 +127,13 @@ const client = new Client({
 });
 
 client.on('ready', () => {
-    console.log(`Logged in as ${client.user.tag}!`);
+    logging.logger.info(`Logged in as ${client.user.tag}!`);
 });
 
-client.on('interactionCreate', async interaction => {
-    logging.logger.debug(interaction);
-    // check if user is priviledged
-    priviledged = false;
-    if (priviledged_user_ids.includes(interaction.user.id)) {
-        priviledged = true;
-    }
-    logging.logger.info("Priviledged: " + priviledged);
-    if (!interaction.isChatInputCommand() && !ai_enabled) {
-        logging.logger.info("Not a chat input command");
-        return;
-    }
-    // none-priviledged commands
-    else if (interaction.commandName === 'ping') {
-        logging.logger.info("Pong!");
-        await interaction.reply('Pong!');
-        return;
-    }
-    else if (interaction.commandName === 'model') {
-        logging.logger.info("Model command");
-        await interaction.reply('Model: ' + bot_model);
-        return;
-    }
-    else if (priviledged) { // priviledged user commands
-        if (interaction.commandName === 'enable') {
-            logging.logger.info("Enabling AI");
-            ai_enabled = true;
-            // search for session
-            var session = sessions.find(session => session.channelId == interaction.channelId);
-            // if session does not exist, create it
-            if (session == undefined) {
-                sessions.push(new ChatSession(interaction.channelId, true));
-            }
-            // if session exists, set it to active
-            else {
-                session.active = true;
-            }
-            await interaction.reply(phrases.power.on[Math.floor(Math.random() * phrases.power.on.length) | 0]);
-            return;
-        }
-        else if (interaction.commandName === 'disable') {
-            logging.logger.info("Disabling AI");
-            ai_enabled = false;
-            // search for session
-            var session = sessions.find(session => session.channelId == interaction.channelId);
-            // if session does not exist, create it
-            if (session == undefined) {
-                sessions.push(new ChatSession(interaction.channelId, false));
-            }
-            // if session exists, set active to false
-            else {
-                session.active = false;
-            }
-            await interaction.reply(phrases.power.off[Math.floor(Math.random() * phrases.power.off.length) | 0]);
-            return;
-        }
+client.on('interactionCreate', async interaction => slashCommandHandler(interaction));
 
-        // command to change mode
-        else if (interaction.commandName === 'setmode') {
-            // this will set the AI's preset
-            logging.logger.info("Setting mode");
-            // get the preset from the interaction
-            var preset = interaction.options.getString('mode');
-            // search for session
-            var session = sessions.find(session => session.channelId == interaction.channelId);
-            // if session does not exist, create it
-            if (session == undefined) {
-                session = new ChatSession(interaction.channelId);
-                sessions.push(session);
-            }
-            // change the preset
-            session.history.changePreset(preset);
-            // reply with the preset
-            await interaction.reply("Set mode to " + session.history.current_preset);
-            return;
-
-        }
-
-    }
-    else {
-        if (!priviledged) {
-            logging.logger.info("Not a priviledged user");
-            await interaction.reply('BIOS error: Access denied!');
-            return;
-        }
-        else {
-            logging.logger.info("Not a valid command");
-            await interaction.reply('ERROR: INPUT UNRECOGNIZED!');
-            return;
-        }
-    }
-});
-
-
-
-// create a on message event
-client.on('messageCreate', msg_event => {
-
-    // Message content
-    const content = msg_event.content
-
-    // Message author
-    var author = msg_event.author.global_name
-    if (author == undefined) {
-        author = msg_event.author.username
-    }
-    // Message author id
-    const author_id = msg_event.author.id
-
-    // if session does not exist, create it
-    var session = sessions.find(session => session.channelId == msg_event.channelId);
-    if (session == undefined) {
-        logging.logger.info("Session does not exist: " + msg_event.channelId + ", creating it");
-        sessions.push(new ChatSession(msg_event.channelId, false));
-    } else {
-        logging.logger.debug("Session exists: " + session.channelId + ", active: " + session.active);
-    }
-
-    // if session is not active, return
-    if (!session.active) {
-        logging.logger.info("Session is not active: " + session.channelId + ", returning");
-        return;
-    } else {
-        logging.logger.debug("Session is active: " + session.channelId + ", using it");
-    }
-
-    session.history.addEntry(author, content);
-
-    var botMentioned = scanForKeyword(msg_event.content, bot_name);
-
-    if (!botMentioned) {
-        logging.logger.info("false");
-        return;
-    } else {
-        logging.logger.debug("true");
-    }
-
-    if (!ai_enabled) {
-        logging.logger.info("AI is not enabled");
-        return;
-    } else {
-        logging.logger.debug("AI is enabled");
-    }
-
-
-    // log content, user
-    logging.logger.info("Message: " + content);
-    logging.logger.info("Author: " + author);
-    // Check if the message is from the bot
-    if (author_id != process.env.DISCORD_BOT_ID) {
-        // Respond with ai response
-        msg_event.channel.sendTyping();
-        var bot_context = session.history.getLatestLog();
-        openai.chat(msg_event, bot_model, bot_context);
-    }
-
-});
+// create a on message event to handle the general message event
+client.on('messageCreate', msg_event => chatHandler(msg_event, bot_name, bot_model));
 
 // login to Discord with your app's token, this starts the bot
 client.login(process.env.DISCORD_TOKEN);

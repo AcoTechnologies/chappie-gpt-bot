@@ -26,6 +26,10 @@ if [[ $first_line == *"EXAMPLE"* ]]; then
     echo "Please enter the your discord ID:"
     read user_id
 
+    # getting the users username
+    echo "Please enter the your discord username:"
+    read user_username
+
     # getting the guild id
     echo "Please enter the guild ID:"
     read guild_id
@@ -42,6 +46,7 @@ if [[ $first_line == *"EXAMPLE"* ]]; then
         sed -i "s/ID_NOT_SET/$client_id/g" .devcontainer/devcontainer.env
         sed -i "s/TOKEN_NOT_SET/$token/g" .devcontainer/devcontainer.env
         sed -i "s/OWNER_ID_NOT_SET/$user_id/g" .devcontainer/devcontainer.env
+        sed -i "s/OWNER_USERNAME_NOT_SET/$user_username/g" .devcontainer/devcontainer.env
         sed -i "s/GUILD_ID_NOT_SET/$guild_id/g" .devcontainer/devcontainer.env
         sed -i "s/API_KEY_NOT_SET/$openai_key/g" .devcontainer/devcontainer.env
 
