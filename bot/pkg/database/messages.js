@@ -3,19 +3,41 @@ const logging = require('../logger');
 
 async function addMessage(session, user, message) {
     try {
+        var timerbypass = false;
         var token_count = message.split(" ").length;
-        // create new message and return it
+
+        // get the last message from the same user within the same session
         const queryResult = await query(`
+            SELECT *
+            FROM chat_messages
+            WHERE session_id = $1
+            AND user_id = $2
+            ORDER BY id DESC
+            LIMIT 1
+        `, [session.id, user.id]);
+
+        // create new message and return it
+        const queryResult2 = await query(`
             INSERT INTO chat_messages (session_id, user_id, message_content, token_count)
             VALUES ($1, $2, $3, $4)
             RETURNING *
         `, [session.id, user.id, message, token_count]);
 
-        return queryResult.rows[0];
+        // compare the timestamps, and if the difference is less than 2 min, set timerbypass to true
+        if (queryResult.rows.length > 0) {
+            var last_message_timestamp = queryResult.rows[0].timestamp;
+            var current_timestamp = queryResult2.rows[0].timestamp;
+            var difference = current_timestamp - last_message_timestamp;
+            if (difference < 120000) {
+                timerbypass = true;
+            }
+        }
+
+        return [queryResult2.rows[0], timerbypass];
 
     } catch (error) {
         logging.logger.error('Error adding message to database:', error);
-        return null;
+        return [null, null];
     }
 }
 
