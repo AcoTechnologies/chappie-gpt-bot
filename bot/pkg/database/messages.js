@@ -1,6 +1,5 @@
 const { query } = require('./engine.js');
 const logging = require('../logger');
-const { DateTime } = require('luxon');
 
 async function addMessage(session, user, message, botMentioned) {
     try {
@@ -8,46 +7,58 @@ async function addMessage(session, user, message, botMentioned) {
         var token_count = message.split(" ").length;
 
         // check if the user has a chat_session in the chat_sessions table, for this guild_session
+        // if none exists, create one if the user mentioned the bot
+        // if one exists, check if the user has sent a message in the last 60 seconds
+        // if the user has sent a message in the last 60 seconds, update the chat_session
+        // if the user has not sent a message in the last 60 seconds, delete the chat_session
+        // if the user has not sent a message in the last 60 seconds, create a new chat_session if the user mentioned the bot
         const chatSession = await query(`
             SELECT *
             FROM chat_sessions
-            WHERE user_id = $1
-            AND guild_session_id = $2
-        `, [user.id, session.id]);
+            WHERE guild_session_id = $1
+            AND user_id = $2
+        `, [session.id, user.id]);
 
-        if (chatSession.rows.length == 0 && botMentioned) {
-            // user does not have a chat_session in the chat_sessions table, for this guild_session
-            // add a chat_session for this user, for this guild_session
-            logging.logger.debug('user does not have a chat_session in the chat_sessions table, for this guild_session');
-            await query(`
-                INSERT INTO chat_sessions (user_id, guild_session_id)
-                VALUES ($1, $2)
-            `, [user.id, session.id]);
-        } else if (chatSession.rows.length > 0) {
-            // user has a chat_session in the chat_sessions table, for this guild_session
-            // check if the user has sent a message in the last 120 seconds
-            // Parse the PostgreSQL timestamp into a Luxon DateTime object
-            const updatedAt = DateTime.fromSQL(chatSession.rows[0].updated_at);
-            logging.logger.debug('updatedAt:', updatedAt);
-            logging.logger.debug('DateTime.now().minus({ seconds: 120 }):', DateTime.now().minus({ seconds: 120 }));
-
-            if (updatedAt > DateTime.now().minus({ seconds: 120 })) {
-                // user has sent a message in the last 120 seconds
-                timerbypass = true;
-                // update the chat_session
+        if (chatSession.rows.length == 0) {
+            // no chat_session exists, create one if the user mentioned the bot
+            if (botMentioned) {
+                logging.logger.debug('bot mentioned, creating chat_session for user: ', user.id, 'in guild_session: ', session.id);
+                await query(`
+                    INSERT INTO chat_sessions (guild_session_id, user_id)
+                    VALUES ($1, $2)
+                `, [session.id, user.id]);
+            }
+        } else {
+            // chat_session exists, check if the user has sent a message in the last 60 seconds
+            logging.logger.debug(`chat session data; id: ${chatSession.rows[0].id}, guild_session_id: ${chatSession.rows[0].guild_session_id}, user_id: ${chatSession.rows[0].user_id}, updated_at: ${chatSession.rows[0].updated_at}`);
+            
+            const lastMessageTime = (new Date(chatSession.rows[0].updated_at));
+            const currentTime = Date.now();
+            const timeSinceLastMessage = (currentTime - lastMessageTime) / 1000;
+            logging.logger.debug('time since last message:', timeSinceLastMessage);
+            if (timeSinceLastMessage < 60) {
+                // user has sent a message in the last 60 seconds, update the chat_session
                 await query(`
                     UPDATE chat_sessions
-                    SET updated_at = $1
-                    WHERE id = $2
-                `, [DateTime.now(), chatSession.rows[0].id]);
-            }
-            else {
-                // user has not sent a message in the last 120 seconds
-                // delete the chat_session
+                    SET updated_at = to_timestamp($1)
+                    WHERE guild_session_id = $2
+                    AND user_id = $3
+                `, [currentTime, session.id, user.id]);
+                timerbypass = true;
+            } else {
+                // user has not sent a message in the last 60 seconds, delete the chat_session
                 await query(`
                     DELETE FROM chat_sessions
-                    WHERE id = $1
-                `, [chatSession.rows[0].id]);
+                    WHERE guild_session_id = $1
+                    AND user_id = $2
+                `, [session.id, user.id]);
+                // create a new chat_session if the user mentioned the bot
+                if (botMentioned) {
+                    await query(`
+                        INSERT INTO chat_sessions (guild_session_id, user_id, updated_at)
+                        VALUES ($1, $2, to_timestamp($3))
+                    `, [session.id, user.id, currentTime]);
+                }
             }
         }
 
