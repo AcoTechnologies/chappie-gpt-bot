@@ -1,6 +1,6 @@
 const { query } = require('./engine.js');
 const logging = require('../logger');
-const moment = require('moment');
+const { DateTime } = require('luxon');
 
 async function addMessage(session, user, message) {
     try {
@@ -25,11 +25,7 @@ async function addMessage(session, user, message) {
         } else {
             // user has a chat_session in the chat_sessions table, for this guild_session
             // check if the user has sent a message in the last 120 seconds
-            logging.logger.debug('chatSession.rows[0].created_at:', chatSession.rows[0].created_at);
-            logging.logger.debug('Date.now():', Date.now);
-            logging.logger.debug('Date.now() - 120000:', Date.now - 120000);
-            logging.logger.debug('greater than:', chatSession.rows[0].created_at > (Date.now - 120000));
-            if (chatSession.rows[0].created_at > (Date.now - 120000)) {
+
                 // user has sent a message in the last 120 seconds
                 timerbypass = true;
             }
