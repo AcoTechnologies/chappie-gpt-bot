@@ -2,16 +2,10 @@ const { query } = require('./engine.js');
 const logging = require('../logger');
 
 async function addMessage(session, user, message, botMentioned) {
+    // adds a message to the database, if the user mentioned the bot, it creates a new chat_session, and user with existing chat_sessions will have their chat_session updated if they send a message within 60 seconds of their last message
     try {
         var timerbypass = false;
         var token_count = message.split(" ").length;
-
-        // check if the user has a chat_session in the chat_sessions table, for this guild_session
-        // if none exists, create one if the user mentioned the bot
-        // if one exists, check if the user has sent a message in the last 60 seconds
-        // if the user has sent a message in the last 60 seconds, update the chat_session
-        // if the user has not sent a message in the last 60 seconds, delete the chat_session
-        // if the user has not sent a message in the last 60 seconds, create a new chat_session if the user mentioned the bot
         const chatSession = await query(`
             SELECT *
             FROM chat_sessions

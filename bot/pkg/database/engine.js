@@ -21,27 +21,3 @@ module.exports = {
         });
     }
 };
-
-// this is how to use the database handler:
-//
-// const { query } = require('./database');
-//
-// query('SELECT * FROM users WHERE id = $1', [1])
-//     .then(res => console.log(res.rows[0]))
-//     .catch(e => console.error(e.stack));
-//
-// or
-//
-// const { getClient } = require('./database');
-//
-// getClient((err, client, done) => {
-//     if (err) throw err;
-//     client.query('SELECT * FROM users WHERE id = $1', [1], (err, res) => {
-//         done();
-//         if (err) {
-//             console.log(err.stack);
-//         } else {
-//             console.log(res.rows[0]);
-//         }
-//     });
-// });
