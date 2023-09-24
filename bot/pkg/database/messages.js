@@ -2,7 +2,7 @@ const { query } = require('./engine.js');
 const logging = require('../logger');
 const { DateTime } = require('luxon');
 
-async function addMessage(session, user, message) {
+async function addMessage(session, user, message, botMentioned) {
     try {
         var timerbypass = false;
         var token_count = message.split(" ").length;
@@ -15,23 +15,39 @@ async function addMessage(session, user, message) {
             AND guild_session_id = $2
         `, [user.id, session.id]);
 
-        if (chatSession.rows.length == 0) {
+        if (chatSession.rows.length == 0 && botMentioned) {
             // user does not have a chat_session in the chat_sessions table, for this guild_session
             // add a chat_session for this user, for this guild_session
+            logging.logger.debug('user does not have a chat_session in the chat_sessions table, for this guild_session');
             await query(`
                 INSERT INTO chat_sessions (user_id, guild_session_id)
                 VALUES ($1, $2)
             `, [user.id, session.id]);
-        } else {
+        } else if (chatSession.rows.length > 0) {
             // user has a chat_session in the chat_sessions table, for this guild_session
             // check if the user has sent a message in the last 120 seconds
+            // Parse the PostgreSQL timestamp into a Luxon DateTime object
+            const updatedAt = DateTime.fromSQL(chatSession.rows[0].updated_at);
+            logging.logger.debug('updatedAt:', updatedAt);
+            logging.logger.debug('DateTime.now().minus({ seconds: 120 }):', DateTime.now().minus({ seconds: 120 }));
 
-            logging.logger.debug('chatSession.rows[0].created_at:', chatSession.rows[0].created_at);
-            logging.logger.debug('DateTime.now():', DateTime.now());
-
-            if (chatSession.rows[0].created_at < DateTime.now().minus({ seconds: 120 }).toSQL()) {
+            if (updatedAt > DateTime.now().minus({ seconds: 120 })) {
                 // user has sent a message in the last 120 seconds
                 timerbypass = true;
+                // update the chat_session
+                await query(`
+                    UPDATE chat_sessions
+                    SET updated_at = $1
+                    WHERE id = $2
+                `, [DateTime.now(), chatSession.rows[0].id]);
+            }
+            else {
+                // user has not sent a message in the last 120 seconds
+                // delete the chat_session
+                await query(`
+                    DELETE FROM chat_sessions
+                    WHERE id = $1
+                `, [chatSession.rows[0].id]);
             }
         }
 

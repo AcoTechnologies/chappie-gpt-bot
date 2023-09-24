@@ -71,7 +71,6 @@ function requestHandler(msgEvent, response, httpCompletion) {
 }
 
 function chat(msgEvent, model, botContext) {
-    logging.logger.debug(botContext);
     const data = {
         model: model,
         messages: botContext,

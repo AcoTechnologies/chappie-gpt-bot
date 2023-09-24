@@ -52,7 +52,10 @@ async function chatHandler(msg_event, bot_name, bot_model) {
         }
     }
 
-    var [ message_db, timerbypass ] = await addMessage(session, user, content);
+    // Check if the bot is mentioned
+    var botMentioned = scanForKeyword(content, bot_name);
+
+    var [ message_db, timerbypass ] = await addMessage(session, user, content, botMentioned);
     if (message_db == null) {
         logging.logger.error("Error adding message to db");
         return;
@@ -74,9 +77,6 @@ async function chatHandler(msg_event, bot_name, bot_model) {
         logging.logger.info("mention logic bypassed by timer");
     }
     else {
-        // Check if the bot is mentioned
-        var botMentioned = scanForKeyword(content, bot_name);
-
         if (!botMentioned) {
             logging.logger.debug("Bot not mentioned, returning");
             return;
