@@ -1,5 +1,6 @@
 const { query } = require('./engine.js');
 const logging = require('../logger');
+const moment = require('moment');
 
 async function addMessage(session, user, message) {
     try {
@@ -17,15 +18,18 @@ async function addMessage(session, user, message) {
         if (chatSession.rows.length == 0) {
             // user does not have a chat_session in the chat_sessions table, for this guild_session
             // add a chat_session for this user, for this guild_session
-            const newChatSession = await query(`
+            await query(`
                 INSERT INTO chat_sessions (user_id, guild_session_id)
                 VALUES ($1, $2)
-                RETURNING *
             `, [user.id, session.id]);
         } else {
             // user has a chat_session in the chat_sessions table, for this guild_session
             // check if the user has sent a message in the last 120 seconds
-            if (chatSession.rows[0].created_at > (Date.now() - 120000)) {
+            logging.logger.debug('chatSession.rows[0].created_at:', chatSession.rows[0].created_at);
+            logging.logger.debug('Date.now():', Date.now);
+            logging.logger.debug('Date.now() - 120000:', Date.now - 120000);
+            logging.logger.debug('greater than:', chatSession.rows[0].created_at > (Date.now - 120000));
+            if (chatSession.rows[0].created_at > (Date.now - 120000)) {
                 // user has sent a message in the last 120 seconds
                 timerbypass = true;
             }
