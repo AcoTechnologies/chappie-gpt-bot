@@ -1,0 +1,18 @@
+{
+    "auth": {
+        "token": "",
+        "client_id": "",
+        "whitelisted_ids": [],
+        "priviledged_ids": [],
+        "guild_id": ""
+    },
+    "openai": {
+        "api_key": "Super secret key in you openai account",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "model": "gpt3",
+        "models": {
+            "gpt3": "gpt-3.5-turbo",
+            "gpt4": "gpt-4"
+        }
+    }
+}
