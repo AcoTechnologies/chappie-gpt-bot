@@ -16,6 +16,8 @@ async function addMessage(session, user, message) {
             LIMIT 1
         `, [session.id, user.id]);
 
+        logging.logger.debug('queryResult.rows:', queryResult.rows);
+
         // create new message and return it
         const queryResult2 = await query(`
             INSERT INTO chat_messages (session_id, user_id, message_content, token_count)
@@ -23,10 +25,12 @@ async function addMessage(session, user, message) {
             RETURNING *
         `, [session.id, user.id, message, token_count]);
 
+        logging.logger.debug('queryResult2.rows:', queryResult2.rows);
+
         // compare the timestamps, and if the difference is less than 2 min, set timerbypass to true
         if (queryResult.rows.length > 0) {
-            var last_message_timestamp = queryResult.rows[0].timestamp;
-            var current_timestamp = queryResult2.rows[0].timestamp;
+            var last_message_timestamp = queryResult.rows[0].created_at;
+            var current_timestamp = queryResult2.rows[0].created_at;
             var difference = current_timestamp - last_message_timestamp;
             logging.logger.debug('time difference from last message:', difference);
             if (difference < 120000) {
