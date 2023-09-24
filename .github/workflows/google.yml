@@ -5,7 +5,7 @@
 # 1. Ensure that your repository contains the necessary configuration for your Google Kubernetes Engine cluster, including deployment.yml, kustomization.yml, service.yml, etc.
 #
 # 2. Create and configure a Workload Identity Provider for GitHub (https://github.com/google-github-actions/auth#setting-up-workload-identity-federation)
-name: Build and Deploy to GKE
+name: Build and Push
 
 on:
   push:
