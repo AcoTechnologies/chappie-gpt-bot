@@ -7,17 +7,17 @@ async function addMessage(session, user, message) {
         var token_count = message.split(" ").length;
 
         // check if the user has a chat_session in the chat_sessions table, for this guild_session
-        const queryResult = await query(`
+        const chatSession = await query(`
             SELECT *
             FROM chat_sessions
             WHERE user_id = $1
             AND guild_session_id = $2
         `, [user.id, session.id]);
 
-        if (queryResult.rows.length == 0) {
+        if (chatSession.rows.length == 0) {
             // user does not have a chat_session in the chat_sessions table, for this guild_session
             // add a chat_session for this user, for this guild_session
-            const queryResult2 = await query(`
+            const newChatSession = await query(`
                 INSERT INTO chat_sessions (user_id, guild_session_id)
                 VALUES ($1, $2)
                 RETURNING *
@@ -25,26 +25,20 @@ async function addMessage(session, user, message) {
         } else {
             // user has a chat_session in the chat_sessions table, for this guild_session
             // check if the user has sent a message in the last 120 seconds
-            const queryResult3 = await query(`
-                SELECT *
-                FROM chat_messages
-                WHERE user_id = $1
-                AND session_id = $2
-                AND created_at > NOW() - INTERVAL '120 seconds'
-            `, [user.id, session.id]);
-
-            if (queryResult3.rows.length > 0) {
+            if (chatSession.rows[0].created_at > (Date.now() - 120000)) {
                 // user has sent a message in the last 120 seconds
                 timerbypass = true;
             }
         }
-        
+
         // create new message and return it
-        const queryResult2 = await query(`
+        const newMessage = await query(`
             INSERT INTO chat_messages (session_id, user_id, message_content, token_count)
             VALUES ($1, $2, $3, $4)
             RETURNING *
         `, [session.id, user.id, message, token_count]);
+
+        return [newMessage.rows[0], timerbypass];
 
     } catch (error) {
         logging.logger.error('Error adding message to database:', error);
