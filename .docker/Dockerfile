@@ -1,15 +1,7 @@
-FROM debian:bullseye-slim
-
-#install curl, then bun
-RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-    && apt-get -y install --no-install-recommends curl \
-    && BUN_INSTALL=/usr/local \
-    && -fsSL https://bun.sh/install | bash \
-    && apt-get clean 
+FROM oven/bun:1.0
 
 # copy package.json, package-lock.json, and bun.lockb
 COPY package.json /app/package.json
-COPY package-lock.json /app/package-lock.json
 COPY bun.lockb /app/bun.lockb
 
 # set working directory
