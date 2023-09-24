@@ -39,7 +39,7 @@ jobs:
 
     - name: Docker configuration
       run: |-
-        echo ${{steps.auth.outputs.access_token}} | docker login -u ${{ secrets.GCLOUD_APP_CLIENT_ID }} --password-stdin https://$GAR_LOCATION-docker.pkg.dev
+        echo ${{ secrets.GCLOUD_APP_TOKEN }} | docker login -u ${{ secrets.GCLOUD_APP_CLIENT_ID }} --password-stdin https://$GAR_LOCATION-docker.pkg.dev
 
     # Build the Docker image
     - name: Build
