@@ -6,39 +6,45 @@ async function addMessage(session, user, message) {
         var timerbypass = false;
         var token_count = message.split(" ").length;
 
-        // get the last message from the same user within the same session
+        // check if the user has a chat_session in the chat_sessions table, for this guild_session
         const queryResult = await query(`
             SELECT *
-            FROM chat_messages
-            WHERE session_id = $1
-            AND user_id = $2
-            ORDER BY id DESC
-            LIMIT 1
-        `, [session.id, user.id]);
+            FROM chat_sessions
+            WHERE user_id = $1
+            AND guild_session_id = $2
+        `, [user.id, session.id]);
 
-        logging.logger.debug('queryResult.rows:', queryResult.rows);
+        if (queryResult.rows.length == 0) {
+            // user does not have a chat_session in the chat_sessions table, for this guild_session
+            // add a chat_session for this user, for this guild_session
+            const queryResult2 = await query(`
+                INSERT INTO chat_sessions (user_id, guild_session_id)
+                VALUES ($1, $2)
+                RETURNING *
+            `, [user.id, session.id]);
+        } else {
+            // user has a chat_session in the chat_sessions table, for this guild_session
+            // check if the user has sent a message in the last 120 seconds
+            const queryResult3 = await query(`
+                SELECT *
+                FROM chat_messages
+                WHERE user_id = $1
+                AND session_id = $2
+                AND created_at > NOW() - INTERVAL '120 seconds'
+            `, [user.id, session.id]);
 
+            if (queryResult3.rows.length > 0) {
+                // user has sent a message in the last 120 seconds
+                timerbypass = true;
+            }
+        }
+        
         // create new message and return it
         const queryResult2 = await query(`
             INSERT INTO chat_messages (session_id, user_id, message_content, token_count)
             VALUES ($1, $2, $3, $4)
             RETURNING *
         `, [session.id, user.id, message, token_count]);
-
-        logging.logger.debug('queryResult2.rows:', queryResult2.rows);
-
-        // compare the timestamps, and if the difference is less than 2 min, set timerbypass to true
-        if (queryResult.rows.length > 0) {
-            var last_message_timestamp = queryResult.rows[0].created_at;
-            var current_timestamp = queryResult2.rows[0].created_at;
-            var difference = current_timestamp - last_message_timestamp;
-            logging.logger.debug('time difference from last message:', difference);
-            if (difference < 120000) {
-                timerbypass = true;
-            }
-        }
-
-        return [queryResult2.rows[0], timerbypass];
 
     } catch (error) {
         logging.logger.error('Error adding message to database:', error);
