@@ -1,82 +1,97 @@
-var logging = require('./logger.js');
-var XMLHttpRequest = require('xhr2');
+const logging = require('./logger.js');
+const XMLHttpRequest = require('xhr2');
 
-const openai_url = "https://api.openai.com/" + process.env.OPENAI_VERSION + "/chat/completions";
+const openaiUrl = `https://api.openai.com/${process.env.OPENAI_VERSION}/chat/completions`;
 
-function requestHandler(msg_event, response, Http_completion) {
-    if (Http_completion.status != 200) {
-        logging.logger.error("Error: " + Http_completion.status);
-        return;
-    }
+function handleApiError(msgEvent, response, httpCompletion) {
+    /* Handle errors from the OpenAI API */
+
+    logging.logger.error(`Error: ${httpCompletion.status}`);
+
     try {
-        logging.logger.info("Response: " + response);
-        var json = JSON.parse(response);
-        // if the response contains key message with value that contains 'overloaded'
-        if (json['message'] && json['message'].includes(
-            'That model is currently overloaded with other requests.')) {
-            // stops sending typing indicator
-            msg_event.reply("Chappie is currently overloaded with other requests. Please try again later.");
-            // log the error
-            logging.logger.error("Error: " + json['message']);
-            return;
-        }
-        var bot_response = json.choices[0].message.content;
-        // send the bot response, within a try catch
-        try {
-            // if the bot response is longer than 2000 characters, throw an error with code 50035
-            if (bot_response.length > 2000) {
-                throw { code: 50035, message: "Message too long" };
-            }
-            msg_event.reply(bot_response);
-        }
-        catch (e) {
-            // if it is a discord api error, log it
-            // if it the error code is 50035, it is a message too long error
-            // so send the first 1500 characters of the response, and send the rest in another message, split by newlines
-            if (e.code == 50035) {
-                logging.logger.info("Message too long, splitting into multiple messages");
-                message_lines = bot_response.split("\n");
-                characters_in_message = 0;
-                reduces_response = "";
-                message_lines.forEach(line => {
-                    if (characters_in_message > 1500) {
-                        msg_event.reply(reduces_response);
-                        reduces_response = "";
-                        characters_in_message = 0;
-                    }
-                    reduces_response += line + "\n";
-                    characters_in_message += line.length;
-                });
-                msg_event.reply(reduces_response);
-            } else {
-                logging.logger.error(e);
-            }
+        const jsonResponse = JSON.parse(response); // Parse the response to JSON
+
+        if (jsonResponse['message'] && jsonResponse['message'].includes('That model is currently overloaded with other requests.')) { // If the error message is that the model is overloaded
+            msgEvent.reply("Chappie is currently overloaded with other requests. Please try again later.");
+            logging.logger.error(`Error: ${jsonResponse['message']}`);
         }
     } catch (e) {
-        console.log(e);
+        logging.logger.error(e); // handle error on either parsing the response or sending the message
     }
 }
 
-// Make a request to the OpenAI API
-function chat(msg_event, model, bot_context) {
-    logging.logger.debug(bot_context);
-    var data = {};
-    data.model = model;
-    data.messages = bot_context;
-    logging.logger.info("url: " + openai_url);
+function handleTooLongMessage(msgEvent, botResponse) {
+    /* Discord has a limit of 2000 characters per message, so we need to split the response into multiple messages */
 
-    const Http_completion = new XMLHttpRequest();
-    Http_completion.open("POST", openai_url);
-    Http_completion.setRequestHeader("Content-Type", "application/json");
-    Http_completion.setRequestHeader("Authorization", "Bearer " + process.env.OPENAI_API_KEY);
-    Http_completion.send(JSON.stringify(data));
-    Http_completion.onreadystatechange = (e) => {
-        if (Http_completion.readyState == 4) {
-            const response = Http_completion.responseText;
-            requestHandler(msg_event, response, Http_completion);
+    logging.logger.info("Message too long, splitting into multiple messages");
+    const messageLines = botResponse.split("\n");
+    let charactersInMessage = 0;
+    let reducedResponse = "";
+
+    messageLines.forEach(line => { 
+        if (charactersInMessage > 1500) { // If the message size has exceeded 1500 characters, send the message
+            msgEvent.reply(reducedResponse); // Send the message
+            reducedResponse = "";
+            charactersInMessage = 0;
         }
+        reducedResponse += `${line}\n`; // Add the line to the message
+        charactersInMessage += line.length; // Add the length of the line to the character count
+    });
+
+    msgEvent.reply(reducedResponse); // Send the last message
+}
+
+function requestHandler(msgEvent, response, httpCompletion) {
+    /* Handle the response from the OpenAI API */
+    if (httpCompletion.status !== 200) { // If the response is not 200, handle the error
+        handleApiError(msgEvent, response, httpCompletion); // Handle the error
+        return;
     }
-    return Http_completion;
+
+    try {
+        logging.logger.info(`Response: ${response}`); // Log the response
+        const jsonResponse = JSON.parse(response); // Parse the response to JSON
+        const botResponse = jsonResponse.choices[0].message.content; // Get the response from the JSON
+
+        try {
+            if (botResponse.length > 2000) { // If the response is longer than 2000 characters, throw an error
+                throw { code: 50035, message: "Message too long" }; // Throw an error
+            }
+            msgEvent.reply(botResponse); // Send the response
+        } catch (e) {
+            if (e.code === 50035) { // If the error is that the message is too long
+                handleTooLongMessage(msgEvent, botResponse); // Handle the error
+            } else {
+                logging.logger.error(e); // Log the error
+            }
+        }
+    } catch (e) {
+        logging.logger.error(e);
+    }
+}
+
+function chat(msgEvent, model, botContext) {
+    const data = {
+        model: model,
+        messages: botContext,
+    };
+
+    logging.logger.info(`url: ${openaiUrl}`);
+
+    const httpCompletion = new XMLHttpRequest();
+    httpCompletion.open("POST", openaiUrl);
+    httpCompletion.setRequestHeader("Content-Type", "application/json");
+    httpCompletion.setRequestHeader("Authorization", `Bearer ${process.env.OPENAI_API_KEY}`);
+    httpCompletion.send(JSON.stringify(data));
+
+    httpCompletion.onreadystatechange = () => {
+        if (httpCompletion.readyState === 4) {
+            const response = httpCompletion.responseText;
+            requestHandler(msgEvent, response, httpCompletion);
+        }
+    };
+
+    return httpCompletion;
 }
 
 module.exports = { chat };

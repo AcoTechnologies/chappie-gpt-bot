@@ -41,9 +41,6 @@ async function chatHandler(msg_event, bot_name, bot_model) {
             return;
         }
     }
-    // log session information
-    logging.logger.info("Session id: " + session.id + ", channel id: " + session.channel_id + ", active: " + session.active);
-
 
     var user = await getUser(msg_event.author.id);
     if (user == null) {
@@ -54,17 +51,17 @@ async function chatHandler(msg_event, bot_name, bot_model) {
             return;
         }
     }
-    // log user information
-    logging.logger.info("User id: " + user.id + ", username: " + user.username);
 
-    // session.history.addEntry(author, content); deprecated
-    var message_db = await addMessage(session, user, content);
+    // Check if the bot is mentioned
+    var botMentioned = scanForKeyword(content, bot_name);
+
+    var [ message_db, timerbypass ] = await addMessage(session, user, content, botMentioned);
     if (message_db == null) {
         logging.logger.error("Error adding message to db");
         return;
     }
     // log message
-    logging.logger.info("Message id: " + message_db.id);
+    logging.logger.info(`message id; ${message_db.id}, session id: ${message_db.session_id}, user id: ${message_db.user_id}, message content: ${message_db.message_content}, token count: ${message_db.token_count}, timerbypass: ${timerbypass}`);
 
 
     // if session is not active, return
@@ -74,20 +71,19 @@ async function chatHandler(msg_event, bot_name, bot_model) {
     } else {
         logging.logger.debug("Session is active: " + session.channel_id + ", using it");
     }
-
-    // log content, user
-    logging.logger.info("Message: " + content);
-    logging.logger.info("Author: " + author);
-
-    var botMentioned = scanForKeyword(content, bot_name);
-
-    if (!botMentioned) {
-        logging.logger.debug("Bot not mentioned, returning");
-        return;
-    } else {
-        logging.logger.debug("Bot mentioned, using it");
+    
+    // check if the bot mention logic is bypassed by the timer
+    if (timerbypass) {
+        logging.logger.info("mention logic bypassed by timer");
     }
-
+    else {
+        if (!botMentioned) {
+            logging.logger.debug("Bot not mentioned, returning");
+            return;
+        } else {
+            logging.logger.debug("Bot mentioned, using it");
+        }
+    }
     // Check if the message is from the bot
     if (author_id != process.env.DISCORD_CLIENT_ID) {
         // Respond with ai response

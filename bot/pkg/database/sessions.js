@@ -3,6 +3,7 @@ const logging = require('../logger');
 const { getPreset } = require('./presets.js');
 
 async function getSession(guild_id, channel_id) {
+    // gets a session from the database by guild_id and channel_id
     try {
         const queryResult = await query(`
             SELECT *
@@ -19,6 +20,7 @@ async function getSession(guild_id, channel_id) {
 }
 
 async function addSession(guild_id, channel_id, active) {
+    // adds a session to the database, and sets the bot_preset_id to the default preset
     try {
         // get the deault preset
         var defaultPreset = await getPreset('default');
@@ -42,6 +44,7 @@ async function addSession(guild_id, channel_id, active) {
 }
 
 async function updateSession(session) {
+    // updates preset_id and active values in the session
     try {
         // update the session and return it
         const queryResult = await query(`

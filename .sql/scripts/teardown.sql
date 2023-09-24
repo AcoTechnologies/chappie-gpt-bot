@@ -5,6 +5,7 @@ DROP TABLE IF EXISTS user_roles;
 DROP TABLE IF EXISTS role_permissions;
 DROP TABLE IF EXISTS permissions;
 DROP TABLE IF EXISTS bot_roles;
+DROP TABLE IF EXISTS chat_sessions;
 DROP TABLE IF EXISTS guild_sessions;
 DROP TABLE IF EXISTS guilds;
 DROP TABLE IF EXISTS users;

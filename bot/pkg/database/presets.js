@@ -2,6 +2,7 @@ const { query } = require('./engine.js');
 const logging = require('../logger');
 
 async function getPreset(name) {
+    // gets a preset from the database by name
     try {
         const queryResult = await query(`
             SELECT *
