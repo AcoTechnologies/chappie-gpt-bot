@@ -1,5 +1,4 @@
 var logger = require('../pkg/logger');
-var auth = require('./auth.json');
 const { REST } = require('@discordjs/rest');
 const { SlashCommandBuilder, Routes } = require('discord.js');
 
@@ -18,23 +17,23 @@ const commands = [
                 .setRequired(true)),
 ].map(command => command.toJSON());
 
-const rest = new REST({ version: '10' }).setToken(auth.token);
+const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
 (async () => {
     try {
         // for guild-based commands
-        rest.put(Routes.applicationGuildCommands(auth.client_id, auth.guild_id), { body: [] })
+        rest.put(Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, process.env.DISCORD_GUILD_ID), { body: [] })
             .then(() => console.log('Successfully deleted all guild commands.'))
             .catch(console.error);
 
         // for global commands
-        rest.put(Routes.applicationCommands(auth.client_id), { body: [] })
+        rest.put(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID), { body: [] })
             .then(() => console.log('Successfully deleted all application commands.'))
             .catch(console.error);
         
         console.log('Started refreshing application (/) commands.');
 
-        await rest.put(Routes.applicationGuildCommands(auth.client_id, auth.guild_id), { body: commands })
+        await rest.put(Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, process.env.DISCORD_GUILD_ID), { body: commands })
             .then((data) => console.log("You installed " + data.length + " commands."))
             .catch((err) => console.log(err));
         console.log('Successfully reloaded application (/) commands.');
