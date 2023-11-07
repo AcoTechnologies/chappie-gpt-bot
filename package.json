@@ -5,8 +5,11 @@
   "main": "bot/bot.js",
   "author": "BraKistad",
   "dependencies": {
+    "@discordjs/opus": "^0.9.0",
+    "@discordjs/voice": "^0.16.0",
     "discord.io": "^2.5.3",
     "discord.js": "^14.3.0",
+    "ffmpeg-static": "^5.2.0",
     "pg": "^8.11.3",
     "request": "^2.88.2",
     "stockfish": "^15.0.0",
@@ -17,6 +20,8 @@
   "license": "MIT",
   "scripts": {
     "start": "bun bot/bot.js",
+    "bot-start": "bun bot/bot.js",
+    "bot-refresh": "bun bot/config/bot-refresh.js",
     "db-init": "bun .sql/cmd/init.js",
     "db-rebuild": "bash .sql/scripts/rebuild.sh"
   },

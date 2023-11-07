@@ -76,6 +76,7 @@ const initPermissions = async () => {
                 ('command_disable'),
                 ('command_model'),
                 ('command_setmode'),
+                ('command_join'),
                 ('chat')
             `);
         
@@ -102,9 +103,9 @@ const initRolePermissions = async () => {
             `);
         // setup values query with ids to match name map
         const map = {
-            "owner": ["command_ping","command_enable","command_disable","command_model","command_setmode","chat"],
-            "admin": ["command_ping","command_enable","command_disable","command_model","command_setmode","chat"],
-            "member": ["command_ping","command_enable","command_disable","command_model","command_setmode","chat"]
+            "owner": ["command_ping","command_enable","command_disable","command_model","command_setmode","command_join","chat"],
+            "admin": ["command_ping","command_enable","command_disable","command_model","command_setmode","command_join","chat"],
+            "member": ["command_ping","command_enable","command_disable","command_model","command_setmode","command_join","chat"]
         };
         var values = "";
         bot_roles.rows.forEach((role) => {
