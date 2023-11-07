@@ -20,8 +20,10 @@
   "license": "MIT",
   "scripts": {
     "start": "node bot/bot.js",
+    "bot-start": "node bot/bot.js",
+    "bot-refresh": "node bot/config/bot-refresh.js",
     "db-init": "node .sql/cmd/init.js",
-    "db-rebuild": "node .sql/scripts/rebuild.sh"
+    "db-rebuild": "bash .sql/scripts/rebuild.sh"
   },
   "devDependencies": {
     "bun-types": "latest"
