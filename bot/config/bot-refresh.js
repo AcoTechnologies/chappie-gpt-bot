@@ -15,6 +15,7 @@ const commands = [
             option.setName('mode')
                 .setDescription('The mode to use\nAvailable modes: default, sys_admin, juridisk_megler')
                 .setRequired(true)),
+                new SlashCommandBuilder().setName('join').setDescription('Join a voice channel')
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);

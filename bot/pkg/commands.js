@@ -3,6 +3,7 @@ const { getUser, addUser, checkUserPermission } = require('./database/users.js')
 const { getPreset } = require('./database/presets.js');
 var logging = require('./logger.js');
 var phrases = require('../config/phrases.json');
+const { joinVoiceChannel } = require('@discordjs/voice');
 
 // funtion package for the command handler(s)
 async function slashCommandHandler(interaction) {
@@ -57,6 +58,27 @@ async function slashCommandHandler(interaction) {
         logging.logger.info("Model command");
         await interaction.reply('Model: ' + bot_model);
         return;
+    }
+    else if (interaction.commandName === 'join') {
+        const permitted = await checkUserPermission(interaction.user.id, "command_join");
+        if (!permitted) {
+          await interaction.reply(phrases.auth.unauthorized[Math.floor(Math.random() * phrases.auth.unauthorized.length)]);
+          return;
+        }
+    
+        if (interaction.member.voice.channel) {
+          const voiceChannel = interaction.member.voice.channel;
+          joinVoiceChannel({
+            channelId: voiceChannel.id,
+            guildId: voiceChannel.guild.id,
+            adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+          });
+    
+          logging.logger.info(`Joined voice channel: ${voiceChannel.name}`);
+          await interaction.reply(`Joining your voice channel: ${voiceChannel.name}`);
+        } else {
+          await interaction.reply('You need to join a voice channel first!');
+        }
     }
     else if (interaction.commandName === 'enable') {
         var permitted = await checkUserPermission(user.id, "command_enable");
