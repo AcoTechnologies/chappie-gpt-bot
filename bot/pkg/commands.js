@@ -3,7 +3,10 @@ const { getUser, addUser, checkUserPermission } = require('./database/users.js')
 const { getPreset } = require('./database/presets.js');
 var logging = require('./logger.js');
 var phrases = require('../config/phrases.json');
-const { joinVoiceChannel } = require('@discordjs/voice');
+// voice stream handling dependencies
+const { joinVoiceChannel, createAudioPlayer, createAudioResource } = require('@discordjs/voice');
+const { spawn } = require('child_process');
+const { StreamType } = require('@discordjs/voice');
 
 // funtion package for the command handler(s)
 async function slashCommandHandler(interaction) {
@@ -67,15 +70,37 @@ async function slashCommandHandler(interaction) {
         }
     
         if (interaction.member.voice.channel) {
-          const voiceChannel = interaction.member.voice.channel;
-          joinVoiceChannel({
-            channelId: voiceChannel.id,
-            guildId: voiceChannel.guild.id,
-            adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-          });
+            const voiceChannel = interaction.member.voice.channel;
+            const connection = joinVoiceChannel({
+                channelId: voiceChannel.id,
+                guildId: voiceChannel.guild.id,
+                adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+            });
+
+            // TODO: add text to speech here
+            // FIXME: Refactor this to a seperate file for voice handling
+
+            // for placeholder, get some random shit
+
+            // Stream the FFmpeg output to Discord
+            const resource = createAudioResource(spawn('ffmpeg', [
+                '-re',
+                '-i', 'https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3',
+                '-f', 's16le',
+                '-ar', '48000',
+                '-ac', '2',
+                'pipe:1',
+            ], {
+                stdio: ['ignore', 'pipe', 'ignore'],
+            }).stdout, {
+                inputType: StreamType.Raw,
+            });
+            const player = createAudioPlayer();
+            player.play(resource);
+            connection.subscribe(player);
     
-          logging.logger.info(`Joined voice channel: ${voiceChannel.name}`);
-          await interaction.reply(`Joining your voice channel: ${voiceChannel.name}`);
+            logging.logger.info(`Joined voice channel: ${voiceChannel.name}`);
+            await interaction.reply(`Joining your voice channel: ${voiceChannel.name}`);
         } else {
           await interaction.reply('You need to join a voice channel first!');
         }
