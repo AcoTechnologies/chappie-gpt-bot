@@ -1,5 +1,10 @@
 #!/usr/bin/bash
 
+# Install bun if not already installed
+if ! command -v bun &> /dev/null; then
+    echo "bun is not installed, installing..."
+    curl -fsSL https://bun.sh/install | bash
+fi
 # install dependencies
 bun install
 
